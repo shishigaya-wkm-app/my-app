@@ -219,13 +219,15 @@ export default function Home() {
         quantity: Number(orderData.quantity || 1) + 1,
       })
     }
-    style={{
-      width: '36px',
-      height: '36px',
-      fontSize: '18px',
-      background: '#ddd',
-      border: '1px solid #999',
-      borderRadius: '6px',
+  style={{
+    width: '36px',
+    height: '36px',
+    fontSize: '18px',
+    background: '#ddd',
+    border: '1px solid #999',
+    borderRadius: '6px',
+    position: 'relative',
+    zIndex: 5,
     }}
   >
     ＋
