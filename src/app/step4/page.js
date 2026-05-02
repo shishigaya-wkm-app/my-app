@@ -126,6 +126,27 @@ export default function Step4() {
             ))}
           </select>
 
+          <div
+            style={{
+              gridRow: '9 / 24',
+              gridColumn: '7 / 35',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <img
+              src="/sheet4-font.png"
+              alt="書体一覧"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+
           <button
             className="app-button"
             onClick={() => router.push('/step3')}
