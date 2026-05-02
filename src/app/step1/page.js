@@ -27,9 +27,8 @@ export default function Step1() {
   return (
     <main className="app-shell">
       <div className="ipad-frame">
-        <div className="grid-screen" style={{ position: 'relative' }}>
+        <div className="grid-screen">
 
-          {/* 進捗バー */}
           <div className="cell black progress-box" style={{ gridRow: '1 / 3', gridColumn: '1 / 5' }}>START</div>
           <div className="cell gray progress-box" style={{ gridRow: '1 / 3', gridColumn: '5 / 9' }}>数量</div>
           <div className="cell blue progress-box" style={{ gridRow: '1 / 3', gridColumn: '9 / 13' }}>場所・向き</div>
@@ -41,7 +40,6 @@ export default function Step1() {
           <div className="cell gray progress-box" style={{ gridRow: '1 / 3', gridColumn: '33 / 37' }}>注文書</div>
           <div className="cell black progress-box" style={{ gridRow: '1 / 3', gridColumn: '37 / 41' }}>GOAL</div>
 
-          {/* タイトル */}
           <div className="cell white" style={{ gridRow: '5 / 6', gridColumn: '5 / 18', fontSize: '12px', fontWeight: 'bold' }}>
             文字を入れる場所を選んでください
           </div>
@@ -50,8 +48,7 @@ export default function Step1() {
             文字の向きを選んでください
           </div>
 
-          {/* 入力UI */}
-          <div className="cell black" style={{ gridRow: '7 / 9', gridColumn: '3 / 7', fontSize: '12px' }}>
+          <div className="cell black" style={{ gridRow: '7 / 9', gridColumn: '3 / 7', fontSize: '12px', border: '1px solid #000' }}>
             1ヶ所目
           </div>
 
@@ -59,7 +56,7 @@ export default function Step1() {
             className="app-input"
             value={orderData.position1}
             onChange={(e) => setValue('position1', e.target.value)}
-            style={{ gridRow: '7 / 9', gridColumn: '7 / 19' }}
+            style={{ gridRow: '7 / 9', gridColumn: '7 / 19', fontSize: '14px' }}
           >
             <option value="">選択</option>
             <option>左胸</option>
@@ -68,7 +65,7 @@ export default function Step1() {
             <option>右腕</option>
           </select>
 
-          <div className="cell black" style={{ gridRow: '7 / 9', gridColumn: '23 / 27', fontSize: '12px' }}>
+          <div className="cell black" style={{ gridRow: '7 / 9', gridColumn: '23 / 27', fontSize: '12px', border: '1px solid #000' }}>
             1ヶ所目
           </div>
 
@@ -76,14 +73,14 @@ export default function Step1() {
             className="app-input"
             value={orderData.direction1}
             onChange={(e) => setValue('direction1', e.target.value)}
-            style={{ gridRow: '7 / 9', gridColumn: '27 / 39' }}
+            style={{ gridRow: '7 / 9', gridColumn: '27 / 39', fontSize: '14px' }}
           >
             <option value="">選択</option>
             <option>ポケット上/ラインに平行</option>
             <option>ポケット上/地面に平行</option>
           </select>
 
-          <div className="cell dark-gray" style={{ gridRow: '10 / 12', gridColumn: '3 / 7', fontSize: '12px' }}>
+          <div className="cell dark-gray" style={{ gridRow: '10 / 12', gridColumn: '3 / 7', fontSize: '12px', border: '1px solid #000' }}>
             2ヶ所目
           </div>
 
@@ -91,7 +88,7 @@ export default function Step1() {
             className="app-input"
             value={orderData.position2}
             onChange={(e) => setValue('position2', e.target.value)}
-            style={{ gridRow: '10 / 12', gridColumn: '7 / 19' }}
+            style={{ gridRow: '10 / 12', gridColumn: '7 / 19', fontSize: '14px' }}
           >
             <option value="">選択</option>
             <option>左胸</option>
@@ -100,60 +97,111 @@ export default function Step1() {
             <option>右腕</option>
           </select>
 
-          <div className="cell dark-gray" style={{ gridRow: '10 / 12', gridColumn: '23 / 27', fontSize: '12px' }}>
-            2ヶ所目
+          <div className="cell dark-gray" style={{ gridRow: '10 / 12', gridColumn: '23 / 27', fontSize: '12px', border: '1px solid #000' }}>
+            1ヶ所目
           </div>
 
           <select
             className="app-input"
             value={orderData.direction2}
             onChange={(e) => setValue('direction2', e.target.value)}
-            style={{ gridRow: '10 / 12', gridColumn: '27 / 39' }}
+            style={{ gridRow: '10 / 12', gridColumn: '27 / 39', fontSize: '14px' }}
           >
             <option value="">選択</option>
             <option>ポケット上/ラインに平行</option>
             <option>ポケット上/地面に平行</option>
           </select>
 
-          {/* 🔥 画像（場所） */}
-          <div style={{ gridRow: '13 / 23', gridColumn: '3 / 19', position: 'relative', zIndex: 0 }}>
-            <img
-              src="/sheet1-place.png"
-              alt=""
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                pointerEvents: 'none'
-              }}
-            />
-          </div>
+<div
+  style={{
+    gridRow: '13 / 23',
+    gridColumn: '3 / 19',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }}
+>
+  <img
+    src="/sheet1-place.png"
+    alt="刺繍場所"
+    style={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'contain',
+      pointerEvents: 'none',
+    }}
+  />
+</div>
 
-          {/* 🔥 画像（向き） */}
-          <div style={{ gridRow: '13 / 20', gridColumn: '23 / 39', position: 'relative', zIndex: 0 }}>
-            <img
-              src="/sheet1-direction.png"
-              alt=""
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                pointerEvents: 'none'
-              }}
-            />
-          </div>
+<div
+  style={{
+    gridRow: '13 / 20',
+    gridColumn: '23 / 39',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }}
+>
+  <img
+    src="/sheet1-direction.png"
+    alt="刺繍向き"
+    style={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'contain',
+      pointerEvents: 'none',
+    }}
+  />
+</div>
 
-          {/* ボタン */}
-          <button className="app-button" onClick={() => router.push('/')} style={{ gridRow: '24 / 27', gridColumn: '14 / 19' }}>
+          <button
+            className="app-button"
+            onClick={() => router.push('/')}
+            style={{ gridRow: '24 / 27', gridColumn: '14 / 19', fontSize: '14px' }}
+          >
             戻る
           </button>
 
-          <button className="app-button" onClick={() => router.push('/step2-common')} style={{ gridRow: '23 / 25', gridColumn: '23 / 28' }}>
+          <button
+            className="app-button"
+            onClick={() => router.push('/step2-common')}
+            style={{ gridRow: '23 / 25', gridColumn: '23 / 28', fontSize: '14px' }}
+          >
             次へ(共通)
           </button>
 
-          <button className="app-button" onClick={() => router.push('/step2-individual')} style={{ gridRow: '26 / 28', gridColumn: '23 / 28' }}>
+          <button
+            className="app-button"
+            onClick={() => router.push('/step2-individual')}
+            style={{ gridRow: '26 / 28', gridColumn: '23 / 28', fontSize: '14px' }}
+          >
             次へ(個別)
+          </button>
+
+          <div className="bottom-bar" style={{ gridRow: '29 / 31', gridColumn: '1 / 41' }} />
+
+          <button
+            className="app-button"
+            onClick={clearStep1}
+            style={{ gridRow: '29 / 31', gridColumn: '1 / 5', fontSize: '14px', zIndex: 2 }}
+          >
+            クリア
+          </button>
+
+          <button
+            className="app-button"
+            onClick={() => router.push('/confirm-common')}
+            style={{ gridRow: '29 / 31', gridColumn: '32 / 36', fontSize: '10px', zIndex: 2 }}
+          >
+            確認画面<br />（共通）
+          </button>
+
+          <button
+            className="app-button"
+            onClick={() => router.push('/confirm-individual')}
+            style={{ gridRow: '29 / 31', gridColumn: '37 / 41', fontSize: '10px', zIndex: 2 }}
+          >
+            確認画面<br />（個別）
           </button>
 
         </div>
