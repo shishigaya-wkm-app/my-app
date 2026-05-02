@@ -155,16 +155,59 @@ export default function Home() {
             該当するご注文を押してください
           </div>
 
-          <input
-            className="app-input"
-            inputMode="numeric"
-            value={orderData.quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            style={{
-              gridRow: '9 / 14',
-              gridColumn: '5 / 13',
-            }}
-          />
+<div
+  style={{
+    gridRow: '9 / 14',
+    gridColumn: '5 / 13',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+  }}
+>
+
+  {/* −ボタン */}
+  <button
+    className="app-button"
+    onClick={() =>
+      setOrderData({
+        ...orderData,
+        quantity: Math.max(1, Number(orderData.quantity || 1) - 1),
+      })
+    }
+    style={{ width: '50px', fontSize: '20px' }}
+  >
+    −
+  </button>
+
+  {/* 数値表示 */}
+  <div
+    className="cell white"
+    style={{
+      width: '70px',
+      textAlign: 'center',
+      fontSize: '22px',
+      fontWeight: 'bold',
+    }}
+  >
+    {orderData.quantity || 1}
+  </div>
+
+  {/* ＋ボタン */}
+  <button
+    className="app-button"
+    onClick={() =>
+      setOrderData({
+        ...orderData,
+        quantity: Number(orderData.quantity || 1) + 1,
+      })
+    }
+    style={{ width: '50px', fontSize: '20px' }}
+  >
+    ＋
+  </button>
+
+</div>
 
           <div
             className="cell white"
