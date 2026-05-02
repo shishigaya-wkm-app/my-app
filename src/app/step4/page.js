@@ -128,8 +128,8 @@ export default function Step4() {
 
           <div
             style={{
-              gridRow: '9 / 24',
-              gridColumn: '7 / 35',
+              gridRow: '9 / 22',
+              gridColumn: '7 / 34',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

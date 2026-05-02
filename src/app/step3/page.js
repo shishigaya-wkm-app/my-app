@@ -161,8 +161,8 @@ export default function Step3() {
 
           <div
             style={{
-              gridRow: '9 / 22',
-              gridColumn: '7 / 35',
+              gridRow: '9 / 23',
+              gridColumn: '8 / 36',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
