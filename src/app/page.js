@@ -162,7 +162,7 @@ export default function Home() {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
+    gap: '12px',
   }}
 >
 
@@ -198,14 +198,17 @@ export default function Home() {
     }}
     inputMode="numeric"
     pattern="[0-9]*"
-    className="cell white"
-    style={{
-      width: '80px',
-      textAlign: 'center',
-      fontSize: '32px',   // ←大きく
-      fontWeight: 'bold',
-      border: '2px solid #000',
-    }}
+  className="cell white"
+  style={{
+    width: '100px',                 // ← 少し横長に（80→100）
+    textAlign: 'center',
+    display: 'flex',                // ← 追加
+    alignItems: 'center',           // ← 追加（縦中央）
+    justifyContent: 'center',       // ← 追加（横中央）
+    fontSize: '34px',               // ← 2上げる（32→34でもOK）
+    fontWeight: 'bold',
+    border: '2px solid #000',
+  }}
   />
 
   {/* ＋ボタン（小さめ） */}
@@ -234,7 +237,7 @@ export default function Home() {
             className="cell white"
             style={{
               gridRow: '10 / 13',
-              gridColumn: '14 / 17',
+              gridColumn: '13 / 16',
               fontSize: '34px',
               fontWeight: 'bold',
               justifyContent: 'flex-start',
