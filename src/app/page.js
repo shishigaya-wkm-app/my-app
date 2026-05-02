@@ -237,7 +237,7 @@ export default function Home() {
             className="cell white"
             style={{
               gridRow: '10 / 13',
-              gridColumn: '14 / 17',
+              gridColumn: '14.3 / 17.3',
               fontSize: '34px',
               fontWeight: 'bold',
               justifyContent: 'flex-start',
