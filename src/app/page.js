@@ -202,7 +202,7 @@ export default function Home() {
     style={{
       width: '80px',
       textAlign: 'center',
-      fontSize: '30px',   // ←大きく
+      fontSize: '32px',   // ←大きく
       fontWeight: 'bold',
       border: '2px solid #000',
     }}
@@ -234,7 +234,7 @@ export default function Home() {
             className="cell white"
             style={{
               gridRow: '10 / 13',
-              gridColumn: '13 / 16',
+              gridColumn: '15 / 18',
               fontSize: '30px',
               fontWeight: 'bold',
               justifyContent: 'flex-start',
