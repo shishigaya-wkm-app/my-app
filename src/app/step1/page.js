@@ -114,8 +114,8 @@ export default function Step1() {
 
 <div
   style={{
-    gridRow: '13 / 23',
-    gridColumn: '3 / 19',
+    gridRow: '13 / 22',
+    gridColumn: '5 / 16',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -135,8 +135,8 @@ export default function Step1() {
 
 <div
   style={{
-    gridRow: '13 / 20',
-    gridColumn: '23 / 39',
+    gridRow: '13 / 21',
+    gridColumn: '26 / 36',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
