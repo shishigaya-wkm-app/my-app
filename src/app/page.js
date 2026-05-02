@@ -162,47 +162,68 @@ export default function Home() {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '10px',
+    gap: '8px',
   }}
 >
 
-  {/* −ボタン */}
+  {/* −ボタン（小さめ） */}
   <button
-    className="app-button"
     onClick={() =>
       setOrderData({
         ...orderData,
         quantity: Math.max(1, Number(orderData.quantity || 1) - 1),
       })
     }
-    style={{ width: '50px', fontSize: '20px' }}
+    style={{
+      width: '36px',
+      height: '36px',
+      fontSize: '18px',
+      background: '#ddd',
+      border: '1px solid #999',
+      borderRadius: '6px',
+    }}
   >
     −
   </button>
 
-  {/* 数値表示 */}
-  <div
+  {/* 数字入力（メイン） */}
+  <input
+    value={orderData.quantity || ''}
+    onChange={(e) => {
+      const val = e.target.value.replace(/[^0-9]/g, '');
+      setOrderData({
+        ...orderData,
+        quantity: val === '' ? '' : Number(val),
+      });
+    }}
+    inputMode="numeric"
+    pattern="[0-9]*"
     className="cell white"
     style={{
-      width: '70px',
+      width: '80px',
       textAlign: 'center',
-      fontSize: '22px',
+      fontSize: '30px',   // ←大きく
       fontWeight: 'bold',
+      border: '2px solid #000',
     }}
-  >
-    {orderData.quantity || 1}
-  </div>
+  />
 
-  {/* ＋ボタン */}
+  {/* ＋ボタン（小さめ） */}
   <button
-    className="app-button"
     onClick={() =>
       setOrderData({
         ...orderData,
         quantity: Number(orderData.quantity || 1) + 1,
       })
     }
-    style={{ width: '50px', fontSize: '20px' }}
+    style={{
+      width: '36px',
+      height: '36px',
+      fontSize: '18px',
+      background: '#ddd',
+      border: '1px solid #999',
+      borderRadius: '6px',
+    }}
   >
     ＋
   </button>
