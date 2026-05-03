@@ -337,13 +337,13 @@ onClick={async () => {
   <input
     value={orderData.yomi || ''}
     onChange={(e) => {
-  const yomi = e.target.value;
-  setOrderData({
-    ...orderData,
-    yomi,
-    kana: getKanaGroup(yomi),
-  });
-}}
+      const yomi = e.target.value;
+      setOrderData({
+        ...orderData,
+        yomi,
+        kana: getKanaGroup(yomi),
+      });
+    }}
     placeholder="フリガナ"
     style={{
       border: 'none',

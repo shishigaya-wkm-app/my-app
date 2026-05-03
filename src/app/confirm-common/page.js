@@ -6,7 +6,6 @@ import JsBarcode from 'jsbarcode';
 import { useOrder } from '../../context/OrderContext';
 import { calcLinePrice, isGoldOrSilver } from '../../lib/calc';
 import { saveOrder } from "../../lib/saveOrder";
-import { createSpreadsheetPdf } from '../../lib/createSpreadsheetPdf';
 
 const kanaOptions = ['ア行', 'カ行', 'サ行', 'タ行', 'ナ行', 'ハ行', 'マ行', 'ヤ行', 'ラ行', 'ワ行'];
 
@@ -45,9 +44,9 @@ export default function ConfirmCommon() {
   const { orderData, setOrderData } = useOrder();
 
   const barcodeRef = useRef(null);
-  const printRef = useRef(null);
 
   const [showPrintPopup, setShowPrintPopup] = useState(false);
+  const [doPrint, setDoPrint] = useState(true);
   const [doSave, setDoSave] = useState(true);
 
   const quantity = Number(orderData.quantity || 0);
@@ -94,7 +93,7 @@ export default function ConfirmCommon() {
     const timer = setTimeout(() => {
       if (!barcodeRef.current) return;
 
-barcodeRef.current.innerHTML = '';
+      barcodeRef.current.innerHTML = '';
 
       JsBarcode(barcodeRef.current, barcodeValue, {
         format: 'EAN13',
@@ -115,46 +114,15 @@ barcodeRef.current.innerHTML = '';
     });
   };
 
-function getKanaGroup(yomi) {
-  const first = String(yomi || '').trim().charAt(0);
+  const executePrintSave = () => {
+    if (!doPrint && !doSave) {
+      alert('印刷または保存を選択してください。');
+      return;
+    }
 
-  if ('アイウエオ'.includes(first)) return 'ア行';
-  if ('カキクケコガギグゲゴ'.includes(first)) return 'カ行';
-  if ('サシスセソザジズゼゾ'.includes(first)) return 'サ行';
-  if ('タチツテトダヂヅデド'.includes(first)) return 'タ行';
-  if ('ナニヌネノ'.includes(first)) return 'ナ行';
-  if ('ハヒフヘホバビブベボパピプペポ'.includes(first)) return 'ハ行';
-  if ('マミムメモ'.includes(first)) return 'マ行';
-  if ('ヤユヨ'.includes(first)) return 'ヤ行';
-  if ('ラリルレロ'.includes(first)) return 'ラ行';
-  if ('ワヲン'.includes(first)) return 'ワ行';
-
-  return '';
-}
-
-const executePrintSave = async () => {
-  const previewWindow = window.open('', '_blank');
-
-  if (!previewWindow) {
-    alert('新しいタブを開けませんでした。ポップアップブロックを解除してください。');
-    return;
-  }
-
-  try {
-    const result = await createSpreadsheetPdf({
-      orderData,
-      mode: 'common',
-      savePdf: doSave,
-    });
-
-    previewWindow.location.href = result.previewUrl;
+    alert('PDF作成・DB保存は次工程で実装します。');
     setShowPrintPopup(false);
-  } catch (error) {
-    console.error(error);
-    previewWindow.close();
-    alert('PDF作成に失敗しました。');
-  }
-};
+  };
 
   const Cell = ({
     row,
@@ -243,13 +211,12 @@ const executePrintSave = async () => {
     <main className="app-shell">
       <div className="ipad-frame" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
         <div
-  ref={printRef}
-  className="grid-screen"
-  style={{
-    height: '160%',
-    gridTemplateRows: 'repeat(48, 1fr)',
-  }}
->
+          className="grid-screen"
+          style={{
+            height: '160%',
+            gridTemplateRows: 'repeat(48, 1fr)',
+          }}
+        >
           <StepCell row="1 / 3" col="1 / 5" bg="#000">START</StepCell>
           <StepCell row="1 / 3" col="5 / 9">数量</StepCell>
           <StepCell row="1 / 3" col="9 / 13">場所・向き</StepCell>
@@ -309,69 +276,59 @@ onClick={async () => {
 
           <Cell row="6 / 8" col="3 / 10" bg="#000" color="#fff">お客様名</Cell>
 
-<div
-  style={{
-    gridRow: '6 / 8',
-    gridColumn: '10 / 31',
-    display: 'grid',
-    gridTemplateRows: '1fr 0.72fr',
-    border: '1px solid #000',
-    background: '#fff',
-    zIndex: 3,
-    boxSizing: 'border-box',
-  }}
->
-  <input
-    value={orderData.customerName || ''}
-    onChange={async (e) => {
-  const name = e.target.value;
-  const yomi = await makeAutoYomi(name);
+          <div
+            style={{
+              gridRow: '6 / 8',
+              gridColumn: '10 / 31',
+              display: 'grid',
+              gridTemplateRows: '1fr 0.72fr',
+              border: '1px solid #000',
+              background: '#fff',
+              zIndex: 3,
+              boxSizing: 'border-box',
+            }}
+          >
+            <input
+              value={orderData.customerName || ''}
+              onChange={(e) => updateField('customerName', e.target.value)}
+              style={{
+                border: 'none',
+                borderBottom: '1px solid #ccc',
+                fontSize: '14px',
+                paddingLeft: '8px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
 
-  setOrderData({
-    ...orderData,
-    customerName: name,
-    yomi,
-    kana: getKanaGroup(yomi),
-  });
-}}
-    style={{
-      border: 'none',
-      borderBottom: '1px solid #ccc',
-      fontSize: '14px',
-      paddingLeft: '8px',
-      outline: 'none',
-      boxSizing: 'border-box',
-    }}
-  />
-
-  <input
-    value={orderData.yomi || ''}
-    onChange={(e) => {
-  const yomi = e.target.value;
-  setOrderData({
-    ...orderData,
-    yomi,
-    kana: getKanaGroup(yomi),
-  });
-}}
-    placeholder="フリガナ"
-    style={{
-      border: 'none',
-      fontSize: '10px',
-      paddingLeft: '8px',
-      outline: 'none',
-      color: '#333',
-      boxSizing: 'border-box',
-    }}
-  />
-</div>
+            <input
+              value={orderData.yomi || ''}
+              onChange={(e) => {
+                const yomi = e.target.value;
+                setOrderData({
+                  ...orderData,
+                  yomi,
+                  kana: getKanaGroup(yomi),
+                });
+              }}
+              placeholder="フリガナ"
+              style={{
+                border: 'none',
+                fontSize: '10px',
+                paddingLeft: '8px',
+                outline: 'none',
+                color: '#333',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
 
           <Cell row="6 / 8" col="31 / 36" bg="#000" color="#fff">
             保存先{'\n'}グループ
           </Cell>
 
           <select
-            value={orderData.kana}
+            value={orderData.kana || ''}
             onChange={(e) => updateField('kana', e.target.value)}
             style={{
               gridRow: '6 / 8',
@@ -547,35 +504,45 @@ onClick={async () => {
                   fontWeight: 'bold',
                 }}
               >
-<div style={{ fontSize: '20px', marginBottom: '18px' }}>
-  印刷イメージを表示します
-</div>
+                <div style={{ fontSize: '20px', marginBottom: '18px' }}>
+                  処理を選択してください
+                </div>
 
-<label style={{ display: 'block', fontSize: '18px', marginBottom: '20px' }}>
-  <input
-    type="checkbox"
-    checked={doSave}
-    onChange={(e) => setDoSave(e.target.checked)}
-    style={{ width: '22px', height: '22px', marginRight: '10px' }}
-  />
-  PDFデータを保存する
-</label>
+                <label style={{ display: 'block', fontSize: '18px', marginBottom: '12px' }}>
+                  <input
+                    type="checkbox"
+                    checked={doPrint}
+                    onChange={(e) => setDoPrint(e.target.checked)}
+                    style={{ width: '22px', height: '22px', marginRight: '10px' }}
+                  />
+                  印刷する
+                </label>
 
-<button
-  className="app-button"
-  onClick={executePrintSave}
-  style={{ width: '110px', height: '45px', fontSize: '16px', marginRight: '16px' }}
->
-  実行
-</button>
+                <label style={{ display: 'block', fontSize: '18px', marginBottom: '20px' }}>
+                  <input
+                    type="checkbox"
+                    checked={doSave}
+                    onChange={(e) => setDoSave(e.target.checked)}
+                    style={{ width: '22px', height: '22px', marginRight: '10px' }}
+                  />
+                  保存する
+                </label>
 
-<button
-  className="app-button"
-  onClick={() => setShowPrintPopup(false)}
-  style={{ width: '110px', height: '45px', fontSize: '16px' }}
->
-  キャンセル
-</button>
+                <button
+                  className="app-button"
+                  onClick={executePrintSave}
+                  style={{ width: '110px', height: '45px', fontSize: '16px', marginRight: '16px' }}
+                >
+                  実行
+                </button>
+
+                <button
+                  className="app-button"
+                  onClick={() => setShowPrintPopup(false)}
+                  style={{ width: '110px', height: '45px', fontSize: '16px' }}
+                >
+                  キャンセル
+                </button>
               </div>
             </div>
           )}
