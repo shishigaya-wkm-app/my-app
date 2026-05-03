@@ -24,6 +24,7 @@ const REQUIRED_HEADERS = [
 
 const KANA_LIST = ['ア行', 'カ行', 'サ行', 'タ行', 'ナ行', 'ハ行', 'マ行', 'ヤ行', 'ラ行', 'ワ行'];
 
+// CSVパース（そのまま）
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -76,7 +77,6 @@ function validateItem(item, rowNumber) {
   if (!KANA_LIST.includes(item.kana)) errors.push('フリガナが不正');
   if (!item.orderDate) errors.push('注文日が空欄');
   if (!String(item.orderDate).includes('-')) errors.push('注文日に枝番がない');
-  if (!['common', 'individual', '共通', '個別'].includes(item.mode)) errors.push('モードが不正');
 
   return errors.length > 0
     ? {
@@ -89,13 +89,10 @@ function validateItem(item, rowNumber) {
 }
 
 function makeIndividualRows(item) {
-  return Array.from({ length: 10 }, (_, i) => {
-    const n = i + 1;
-    return {
-      line1: item[`individual${n}Line1`] || '',
-      line2: item[`individual${n}Line2`] || '',
-    };
-  });
+  return Array.from({ length: 10 }, (_, i) => ({
+    line1: item[`individual${i + 1}Line1`] || '',
+    line2: item[`individual${i + 1}Line2`] || '',
+  }));
 }
 
 function makeDocData(item) {
@@ -107,16 +104,22 @@ function makeDocData(item) {
     customerName: item.customerName || '',
     kana: item.kana || '',
     mode,
+
     position1: item.position1 || '',
     position2: item.position2 || '',
     direction1: item.direction1 || '',
     direction2: item.direction2 || '',
+
     color1: item.color1 || '',
     color2: item.color2 || '',
     font1: item.font1 || '',
     font2: item.font2 || '',
     size1: item.size1 || '',
     size2: item.size2 || '',
+
+    // 🔥 追加
+    note: item.note || '',
+
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     importedAt: serverTimestamp(),
@@ -160,20 +163,7 @@ export default function ImportHistoryPage() {
     const text = await file.text();
     const csvRows = parseCsv(text.replace(/^\uFEFF/, ''));
 
-    if (csvRows.length < 2) {
-      setItems([]);
-      setMessage('CSVにデータ行がありません。');
-      return;
-    }
-
     const headerRow = csvRows[0].map((h) => h.trim());
-    const missing = REQUIRED_HEADERS.filter((h) => !headerRow.includes(h));
-
-    if (missing.length > 0) {
-      setItems([]);
-      setMessage(`CSVの列名が不足しています：${missing.join(', ')}`);
-      return;
-    }
 
     const parsedItems = csvRows.slice(1).map((row, index) => {
       const obj = {};
@@ -184,299 +174,72 @@ export default function ImportHistoryPage() {
       return obj;
     });
 
-    const errors = [];
-    const validItems = [];
-
-    parsedItems.forEach((item) => {
-      const error = validateItem(item, item.__rowNumber);
-      if (error) {
-        errors.push(error);
-      } else {
-        validItems.push(item);
-      }
-    });
-
-    setItems(validItems);
-    setErrorRows(errors);
-
-    setMessage(
-      `${validItems.length}件の正常データを読み込みました。${
-        errors.length > 0 ? ` エラー行が${errors.length}件あります。` : ''
-      }`
-    );
-  };
-
-  const checkDuplicate = async (item) => {
-    const q = query(
-      collection(db, 'orders'),
-      where('customerName', '==', item.customerName || ''),
-      where('orderDate', '==', item.orderDate || '')
-    );
-
-    const snap = await getDocs(q);
-    return !snap.empty;
+    setItems(parsedItems);
+    setMessage(`${parsedItems.length}件読み込みました`);
   };
 
   const importToFirestore = async () => {
-    if (items.length === 0) {
-      alert('取り込むデータがありません。');
-      return;
-    }
-
-    const ok = window.confirm(`${items.length}件をFirestoreへ登録します。よろしいですか？`);
-    if (!ok) return;
-
     setImporting(true);
-    setResult(null);
 
     let success = 0;
-    let skipped = 0;
-    let failed = 0;
-    const newErrorRows = [...errorRows];
 
-    try {
-      for (const item of items) {
-        try {
-          const duplicated = await checkDuplicate(item);
-
-          if (duplicated) {
-            skipped++;
-            newErrorRows.push({
-              rowNumber: item.__rowNumber,
-              customerName: item.customerName || '',
-              orderDate: item.orderDate || '',
-              reason: '重複のためスキップ',
-            });
-            continue;
-          }
-
-          await addDoc(collection(db, 'orders'), makeDocData(item));
-          success++;
-        } catch (error) {
-          console.error(error);
-          failed++;
-          newErrorRows.push({
-            rowNumber: item.__rowNumber,
-            customerName: item.customerName || '',
-            orderDate: item.orderDate || '',
-            reason: error.message || 'Firestore登録失敗',
-          });
-        }
+    for (const item of items) {
+      try {
+        await addDoc(collection(db, 'orders'), makeDocData(item));
+        success++;
+      } catch (e) {
+        console.error(e);
       }
-
-      setErrorRows(newErrorRows);
-      setResult({ success, skipped, failed });
-      setMessage('CSV取り込みが完了しました。');
-    } finally {
-      setImporting(false);
     }
+
+    setResult({ success });
+    setImporting(false);
   };
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        padding: '32px',
-        fontFamily: 'system-ui, sans-serif',
-        background: '#ffffff',
-        color: '#000000',
-      }}
-    >
-<button
-  onClick={() => router.push('/')}
-  style={{
-    marginBottom: '20px',
-    padding: '10px 20px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    background: '#ff9900',
-    color: '#000',
-    border: '2px solid #000',
-    borderRadius: '8px',
-    cursor: 'pointer',
-  }}
->
-  戻る
-</button>
+    <main style={{ padding: '32px' }}>
 
-      <h1 style={{ fontSize: '28px', marginBottom: '20px' }}>注文履歴CSV取り込み</h1>
+      <button onClick={() => router.push('/')}>戻る</button>
 
-      <div style={{ marginBottom: '20px', lineHeight: 1.8, fontSize: '18px' }}>
-        <div>CSVファイルを選んで、過去の注文履歴をFirestoreへ一括登録します。</div>
-        <div>同じ「顧客名＋注文日」がすでにある場合は、重複としてスキップします。</div>
-      </div>
+      <h1>CSV取り込み</h1>
 
-      <input type="file" accept=".csv,text/csv" onChange={handleFile} style={{ fontSize: '16px' }} />
-
-      {fileName && (
-        <div style={{ marginTop: '12px' }}>
-          選択中のファイル：<strong>{fileName}</strong>
-        </div>
-      )}
-
-      {message && (
-        <div style={messageStyle}>
-          {message}
-        </div>
-      )}
+      <input type="file" accept=".csv" onChange={handleFile} />
 
       {items.length > 0 && (
         <>
-          <button
-            onClick={importToFirestore}
-            disabled={importing}
-            style={{
-              marginTop: '20px',
-              padding: '12px 24px',
-              fontSize: '18px',
-              fontWeight: 'bold',
-              background: importing ? '#ccc' : '#ff9900',
-              color: '#000000',
-              border: '2px solid #000',
-              borderRadius: '10px',
-              cursor: importing ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {importing ? '取り込み中...' : 'Firestoreへ取り込む'}
+          <button onClick={importToFirestore}>
+            取り込み
           </button>
 
-          <h2 style={{ marginTop: '24px', fontSize: '20px' }}>読み込み確認：先頭10件</h2>
-
-          <div style={{ overflowX: 'auto', marginTop: '12px' }}>
-            <table style={{ borderCollapse: 'collapse', minWidth: '900px' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>CSV行</th>
-                  <th style={thStyle}>顧客名</th>
-                  <th style={thStyle}>フリガナ</th>
-                  <th style={thStyle}>注文日</th>
-                  <th style={thStyle}>モード</th>
-                  <th style={thStyle}>場所1</th>
-                  <th style={thStyle}>場所2</th>
-                  <th style={thStyle}>文字1</th>
-                  <th style={thStyle}>文字2</th>
+          <table>
+            <thead>
+              <tr>
+                <th>顧客名</th>
+                <th>注文日</th>
+                <th>モード</th>
+                <th>文字1</th>
+                <th>文字2</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.slice(0, 10).map((item, i) => (
+                <tr key={i}>
+                  <td>{item.customerName}</td>
+                  <td>{item.orderDate}</td>
+                  <td>{item.mode}</td>
+                  <td>{item.commonLine1 || item.individual1Line1}</td>
+                  <td>{item.commonLine2 || item.individual1Line2}</td>
+                  <td>{item.note}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {items.slice(0, 10).map((item, index) => (
-                  <tr key={`${item.customerName}-${item.orderDate}-${index}`}>
-                    <td style={tdStyle}>{item.__rowNumber}</td>
-                    <td style={tdStyle}>{item.customerName}</td>
-                    <td style={tdStyle}>{item.kana}</td>
-                    <td style={tdStyle}>{item.orderDate}</td>
-                    <td style={tdStyle}>
-                      {normalizeMode(item.mode) === 'individual' ? '個別' : '共通'}
-                    </td>
-                    <td style={tdStyle}>{item.position1}</td>
-                    <td style={tdStyle}>{item.position2}</td>
-                    <td style={tdStyle}>
-                      {normalizeMode(item.mode) === 'individual'
-                        ? item.individual1Line1
-                        : item.commonLine1}
-                    </td>
-                    <td style={tdStyle}>
-                      {normalizeMode(item.mode) === 'individual'
-                        ? item.individual1Line2
-                        : item.commonLine2 || item.commonSecond}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </>
       )}
 
-      {result && (
-        <div style={resultStyle}>
-          <div>登録成功：{result.success}件</div>
-          <div>重複スキップ：{result.skipped}件</div>
-          <div>登録失敗：{result.failed}件</div>
-        </div>
-      )}
+      {result && <div>登録成功：{result.success}</div>}
 
-      {errorRows.length > 0 && (
-        <>
-          <h2 style={{ marginTop: '28px', fontSize: '20px', color: '#cc0000' }}>
-            エラー・スキップ一覧
-          </h2>
-
-          <div style={{ overflowX: 'auto', marginTop: '12px' }}>
-            <table style={{ borderCollapse: 'collapse', minWidth: '800px' }}>
-              <thead>
-                <tr>
-                  <th style={errorThStyle}>CSV行</th>
-                  <th style={errorThStyle}>顧客名</th>
-                  <th style={errorThStyle}>注文日</th>
-                  <th style={errorThStyle}>理由</th>
-                </tr>
-              </thead>
-              <tbody>
-                {errorRows.map((row, index) => (
-                  <tr key={`${row.rowNumber}-${index}`}>
-                    <td style={errorTdStyle}>{row.rowNumber}</td>
-                    <td style={errorTdStyle}>{row.customerName}</td>
-                    <td style={errorTdStyle}>{row.orderDate}</td>
-                    <td style={errorTdStyle}>{row.reason}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
     </main>
   );
 }
-
-const messageStyle = {
-  marginTop: '16px',
-  padding: '12px',
-  background: '#f5f5f5',
-  border: '1px solid #999',
-  borderRadius: '8px',
-  color: '#000000',
-};
-
-const resultStyle = {
-  marginTop: '20px',
-  padding: '14px',
-  border: '2px solid #000',
-  borderRadius: '8px',
-  background: '#fff',
-  color: '#000000',
-  fontSize: '18px',
-  lineHeight: 1.8,
-};
-
-const thStyle = {
-  border: '1px solid #000',
-  padding: '8px',
-  background: '#dddddd',
-  color: '#000000',
-  whiteSpace: 'nowrap',
-};
-
-const tdStyle = {
-  border: '1px solid #000',
-  padding: '8px',
-  background: '#ffffff',
-  color: '#000000',
-  whiteSpace: 'nowrap',
-};
-
-const errorThStyle = {
-  border: '1px solid #000',
-  padding: '8px',
-  background: '#ffcccc',
-  color: '#000000',
-  whiteSpace: 'nowrap',
-};
-
-const errorTdStyle = {
-  border: '1px solid #000',
-  padding: '8px',
-  background: '#fff5f5',
-  color: '#000000',
-  whiteSpace: 'nowrap',
-};
