@@ -7,6 +7,7 @@ import { db } from '../../firebase/config';
 
 const REQUIRED_HEADERS = [
   'customerName',
+  'yomi',
   'kana',
   'orderDate',
   'mode',
@@ -20,6 +21,30 @@ const REQUIRED_HEADERS = [
   'font2',
   'size1',
   'size2',
+  'commonLine1',
+  'commonLine2',
+  'commonSecond',
+  'individual1Line1',
+  'individual1Line2',
+  'individual2Line1',
+  'individual2Line2',
+  'individual3Line1',
+  'individual3Line2',
+  'individual4Line1',
+  'individual4Line2',
+  'individual5Line1',
+  'individual5Line2',
+  'individual6Line1',
+  'individual6Line2',
+  'individual7Line1',
+  'individual7Line2',
+  'individual8Line1',
+  'individual8Line2',
+  'individual9Line1',
+  'individual9Line2',
+  'individual10Line1',
+  'individual10Line2',
+  'note',
 ];
 
 const KANA_LIST = ['ア行', 'カ行', 'サ行', 'タ行', 'ナ行', 'ハ行', 'マ行', 'ヤ行', 'ラ行', 'ワ行'];
@@ -72,8 +97,9 @@ function validateItem(item, rowNumber) {
   const errors = [];
 
   if (!item.customerName) errors.push('顧客名が空欄');
-  if (!item.kana) errors.push('フリガナが空欄');
-  if (!KANA_LIST.includes(item.kana)) errors.push('フリガナが不正');
+  if (!item.yomi) errors.push('読み(yomi)が空欄');
+  if (!item.kana) errors.push('分類(kana)が空欄');
+  if (!KANA_LIST.includes(item.kana)) errors.push('分類(kana)が不正');
   if (!item.orderDate) errors.push('注文日が空欄');
   if (!String(item.orderDate).includes('-')) errors.push('注文日に枝番がない');
   if (!['common', 'individual', '共通', '個別'].includes(item.mode)) errors.push('モードが不正');
@@ -105,6 +131,7 @@ function makeDocData(item) {
     orderDate: item.orderDate || '',
     orderDateBase: getOrderDateBase(item.orderDate),
     customerName: item.customerName || '',
+    yomi: item.yomi || '',
     kana: item.kana || '',
     mode,
     position1: item.position1 || '',
@@ -167,7 +194,7 @@ export default function ImportHistoryPage() {
       return;
     }
 
-    const headerRow = csvRows[0].map((h) => h.trim());
+    const headerRow = csvRows[0].map((h) => String(h).trim());
     const missing = REQUIRED_HEADERS.filter((h) => !headerRow.includes(h));
 
     if (missing.length > 0) {
@@ -276,11 +303,14 @@ export default function ImportHistoryPage() {
   return (
     <main
       style={{
-        minHeight: '100vh',
+        height: '100vh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
         padding: '32px',
         fontFamily: 'system-ui, sans-serif',
         background: '#ffffff',
         color: '#000000',
+        boxSizing: 'border-box',
       }}
     >
       <button
@@ -343,19 +373,27 @@ export default function ImportHistoryPage() {
 
           <h2 style={{ marginTop: '24px', fontSize: '20px' }}>読み込み確認：先頭10件</h2>
 
-          <div style={{ overflowX: 'auto', marginTop: '12px' }}>
-            <table style={{ borderCollapse: 'collapse', minWidth: '1000px' }}>
+          <div style={{ overflowX: 'auto', marginTop: '12px', paddingBottom: '12px' }}>
+            <table style={{ borderCollapse: 'collapse', minWidth: '3000px' }}>
               <thead>
                 <tr>
                   <th style={thStyle}>CSV行</th>
                   <th style={thStyle}>顧客名</th>
-                  <th style={thStyle}>フリガナ</th>
+                  <th style={thStyle}>読み(yomi)</th>
+                  <th style={thStyle}>分類(kana)</th>
                   <th style={thStyle}>注文日</th>
                   <th style={thStyle}>モード</th>
                   <th style={thStyle}>場所1</th>
                   <th style={thStyle}>場所2</th>
-                  <th style={thStyle}>文字1</th>
-                  <th style={thStyle}>文字2</th>
+                  <th style={thStyle}>共通1行目</th>
+                  <th style={thStyle}>共通2行目</th>
+                  <th style={thStyle}>共通2ヶ所目</th>
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <>
+                      <th key={`h-i${i + 1}-l1`} style={thStyle}>{i + 1}着目1行目</th>
+                      <th key={`h-i${i + 1}-l2`} style={thStyle}>{i + 1}着目2行目</th>
+                    </>
+                  ))}
                   <th style={thStyle}>備考</th>
                 </tr>
               </thead>
@@ -364,6 +402,7 @@ export default function ImportHistoryPage() {
                   <tr key={`${item.customerName}-${item.orderDate}-${index}`}>
                     <td style={tdStyle}>{item.__rowNumber}</td>
                     <td style={tdStyle}>{item.customerName}</td>
+                    <td style={tdStyle}>{item.yomi}</td>
                     <td style={tdStyle}>{item.kana}</td>
                     <td style={tdStyle}>{item.orderDate}</td>
                     <td style={tdStyle}>
@@ -371,16 +410,18 @@ export default function ImportHistoryPage() {
                     </td>
                     <td style={tdStyle}>{item.position1}</td>
                     <td style={tdStyle}>{item.position2}</td>
-                    <td style={tdStyle}>
-                      {normalizeMode(item.mode) === 'individual'
-                        ? item.individual1Line1
-                        : item.commonLine1}
-                    </td>
-                    <td style={tdStyle}>
-                      {normalizeMode(item.mode) === 'individual'
-                        ? item.individual1Line2
-                        : item.commonLine2 || item.commonSecond}
-                    </td>
+                    <td style={tdStyle}>{item.commonLine1}</td>
+                    <td style={tdStyle}>{item.commonLine2}</td>
+                    <td style={tdStyle}>{item.commonSecond}</td>
+                    {Array.from({ length: 10 }, (_, i) => {
+                      const n = i + 1;
+                      return (
+                        <>
+                          <td key={`d-i${n}-l1`} style={tdStyle}>{item[`individual${n}Line1`]}</td>
+                          <td key={`d-i${n}-l2`} style={tdStyle}>{item[`individual${n}Line2`]}</td>
+                        </>
+                      );
+                    })}
                     <td style={tdStyle}>{item.note || ''}</td>
                   </tr>
                 ))}
@@ -404,7 +445,7 @@ export default function ImportHistoryPage() {
             エラー・スキップ一覧
           </h2>
 
-          <div style={{ overflowX: 'auto', marginTop: '12px' }}>
+          <div style={{ overflowX: 'auto', marginTop: '12px', paddingBottom: '40px' }}>
             <table style={{ borderCollapse: 'collapse', minWidth: '800px' }}>
               <thead>
                 <tr>
