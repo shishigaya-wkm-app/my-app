@@ -323,7 +323,17 @@ onClick={async () => {
 >
   <input
     value={orderData.customerName || ''}
-    onChange={(e) => updateField('customerName', e.target.value)}
+    onChange={async (e) => {
+  const name = e.target.value;
+  const yomi = await makeAutoYomi(name);
+
+  setOrderData({
+    ...orderData,
+    customerName: name,
+    yomi,
+    kana: getKanaGroup(yomi),
+  });
+}}
     style={{
       border: 'none',
       borderBottom: '1px solid #ccc',
