@@ -116,6 +116,8 @@ const restoreOrder = (order) => {
     size1: order.size1 || '',
     size2: order.size2 || '',
 
+note: order.note || '',
+
     textCommon: order.textCommon || {
       line1: '',
       line2: '',
