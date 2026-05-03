@@ -69,6 +69,7 @@ export const saveOrder = async (orderData) => {
 
     customerName,
     kana: orderData.kana || "",
+    yomi: orderData.yomi || "",
     mode,
 
     position1: orderData.position1 || "",
@@ -85,6 +86,8 @@ export const saveOrder = async (orderData) => {
 
     size1: orderData.size1 || "",
     size2: orderData.size2 || "",
+
+    note: orderData.note || "",
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

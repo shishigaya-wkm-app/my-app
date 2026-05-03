@@ -290,20 +290,45 @@ onClick={async () => {
 
           <Cell row="6 / 8" col="3 / 10" bg="#000" color="#fff">お客様名</Cell>
 
-          <input
-            value={orderData.customerName || ''}
-            onChange={(e) => updateField('customerName', e.target.value)}
-            style={{
-              gridRow: '6 / 8',
-              gridColumn: '10 / 31',
-              border: '1px solid #000',
-              fontSize: '14px',
-              paddingLeft: '8px',
-              outline: 'none',
-              zIndex: 3,
-              boxSizing: 'border-box',
-            }}
-          />
+<div
+  style={{
+    gridRow: '6 / 8',
+    gridColumn: '10 / 31',
+    display: 'grid',
+    gridTemplateRows: '1fr 0.72fr',
+    border: '1px solid #000',
+    background: '#fff',
+    zIndex: 3,
+    boxSizing: 'border-box',
+  }}
+>
+  <input
+    value={orderData.customerName || ''}
+    onChange={(e) => updateField('customerName', e.target.value)}
+    style={{
+      border: 'none',
+      borderBottom: '1px solid #ccc',
+      fontSize: '14px',
+      paddingLeft: '8px',
+      outline: 'none',
+      boxSizing: 'border-box',
+    }}
+  />
+
+  <input
+    value={orderData.yomi || ''}
+    onChange={(e) => updateField('yomi', e.target.value)}
+    placeholder="フリガナ"
+    style={{
+      border: 'none',
+      fontSize: '10px',
+      paddingLeft: '8px',
+      outline: 'none',
+      color: '#333',
+      boxSizing: 'border-box',
+    }}
+  />
+</div>
 
           <Cell row="6 / 8" col="31 / 36" bg="#000" color="#fff">
             保存先{'\n'}グループ

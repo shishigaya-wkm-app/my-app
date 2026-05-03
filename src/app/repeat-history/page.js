@@ -44,15 +44,19 @@ export default function RepeatHistoryPage() {
         const data = doc.data();
         if (!data.customerName) return;
 
-        customerMap.set(data.customerName, {
-          customerName: data.customerName,
-          kana: data.kana || '',
-        });
+customerMap.set(data.customerName, {
+  customerName: data.customerName,
+  kana: data.kana || '',
+  yomi: data.yomi || '',
+});
       });
 
-      const list = Array.from(customerMap.values()).sort((a, b) =>
-        a.customerName.localeCompare(b.customerName, 'ja')
-      );
+const list = Array.from(customerMap.values()).sort((a, b) =>
+  String(a.yomi || a.customerName || '').localeCompare(
+    String(b.yomi || b.customerName || ''),
+    'ja'
+  )
+);
 
       setCustomers(list);
       setPopupType('customers');
@@ -97,9 +101,10 @@ const restoreOrder = (order) => {
   setOrderData((prev) => ({
     ...prev,
 
-    customerName: order.customerName || '',
-    kana: order.kana || '',
-    mode: order.mode || 'common',
+customerName: order.customerName || '',
+kana: order.kana || '',
+yomi: order.yomi || '',
+mode: order.mode || 'common',
 
     position1: order.position1 || '',
     position2: order.position2 || '',
