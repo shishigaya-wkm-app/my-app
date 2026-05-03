@@ -115,6 +115,23 @@ barcodeRef.current.innerHTML = '';
     });
   };
 
+function getKanaGroup(yomi) {
+  const first = String(yomi || '').trim().charAt(0);
+
+  if ('アイウエオ'.includes(first)) return 'ア行';
+  if ('カキクケコガギグゲゴ'.includes(first)) return 'カ行';
+  if ('サシスセソザジズゼゾ'.includes(first)) return 'サ行';
+  if ('タチツテトダヂヅデド'.includes(first)) return 'タ行';
+  if ('ナニヌネノ'.includes(first)) return 'ナ行';
+  if ('ハヒフヘホバビブベボパピプペポ'.includes(first)) return 'ハ行';
+  if ('マミムメモ'.includes(first)) return 'マ行';
+  if ('ヤユヨ'.includes(first)) return 'ヤ行';
+  if ('ラリルレロ'.includes(first)) return 'ラ行';
+  if ('ワヲン'.includes(first)) return 'ワ行';
+
+  return '';
+}
+
 const executePrintSave = async () => {
   const previewWindow = window.open('', '_blank');
 
@@ -319,7 +336,14 @@ onClick={async () => {
 
   <input
     value={orderData.yomi || ''}
-    onChange={(e) => updateField('yomi', e.target.value)}
+    onChange={(e) => {
+  const yomi = e.target.value;
+  setOrderData({
+    ...orderData,
+    yomi,
+    kana: getKanaGroup(yomi),
+  });
+}}
     placeholder="フリガナ"
     style={{
       border: 'none',
