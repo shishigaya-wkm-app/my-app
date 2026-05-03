@@ -94,6 +94,8 @@ export default function ConfirmCommon() {
     const timer = setTimeout(() => {
       if (!barcodeRef.current) return;
 
+barcodeRef.current.innerHTML = '';
+
       JsBarcode(barcodeRef.current, barcodeValue, {
         format: 'EAN13',
         displayValue: false,
@@ -104,7 +106,7 @@ export default function ConfirmCommon() {
     }, 50);
 
     return () => clearTimeout(timer);
-  }, [barcodeValue]);
+  }, [barcodeValue, orderData.customerName, orderData.yomi, orderData.kana]);
 
   const updateField = (key, value) => {
     setOrderData({

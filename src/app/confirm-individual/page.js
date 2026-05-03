@@ -93,6 +93,8 @@ export default function ConfirmIndividual() {
     const draw = () => {
       if (!barcodeRef.current) return;
 
+      barcodeRef.current.innerHTML = '';
+
       try {
         JsBarcode(barcodeRef.current, barcodeValue, {
           format: 'EAN13',
@@ -109,7 +111,7 @@ export default function ConfirmIndividual() {
     draw();
     const timer = setTimeout(draw, 100);
     return () => clearTimeout(timer);
-  }, [barcodeValue]);
+  }, [barcodeValue, orderData.customerName, orderData.yomi, orderData.kana]);
 
   const updateField = (key, value) => {
     setOrderData({
