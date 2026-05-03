@@ -44,10 +44,12 @@ export default function RepeatHistoryPage() {
         const data = doc.data();
         if (!data.customerName) return;
 
+const existing = customerMap.get(data.customerName);
+
 customerMap.set(data.customerName, {
   customerName: data.customerName,
   kana: data.kana || '',
-  yomi: data.yomi || '',
+  yomi: data.yomi || existing?.yomi || '',
 });
       });
 
