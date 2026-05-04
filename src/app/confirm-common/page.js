@@ -8,6 +8,64 @@ import { calcLinePrice, isGoldOrSilver } from '../../lib/calc';
 import { saveOrder } from "../../lib/saveOrder";
 
 const kanaOptions = ['ア行', 'カ行', 'サ行', 'タ行', 'ナ行', 'ハ行', 'マ行', 'ヤ行', 'ラ行', 'ワ行'];
+let kuroshiroInstance = null;
+let kuroshiroInitializing = null;
+
+async function getKuroshiro() {
+  if (kuroshiroInstance) return kuroshiroInstance;
+
+  if (!kuroshiroInitializing) {
+    kuroshiroInitializing = (async () => {
+      const KuroshiroModule = await import('kuroshiro');
+      const KuromojiAnalyzerModule = await import('kuroshiro-analyzer-kuromoji');
+
+      const Kuroshiro = KuroshiroModule.default;
+      const KuromojiAnalyzer = KuromojiAnalyzerModule.default;
+
+      const kuroshiro = new Kuroshiro();
+      await kuroshiro.init(new KuromojiAnalyzer({ dictPath: '/dict' }));
+
+      kuroshiroInstance = kuroshiro;
+      return kuroshiro;
+    })();
+  }
+
+  return kuroshiroInitializing;
+}
+
+function cleanCustomerNameForYomi(name) {
+  return String(name || '')
+    .replace(/株式会社/g, '')
+    .replace(/有限会社/g, '')
+    .replace(/合同会社/g, '')
+    .replace(/㈱/g, '')
+    .replace(/㈲/g, '')
+    .replace(/\(株\)/g, '')
+    .replace(/（株）/g, '')
+    .replace(/\(有\)/g, '')
+    .replace(/（有）/g, '')
+    .replace(/\(同\)/g, '')
+    .replace(/（同）/g, '')
+    .trim();
+}
+
+async function makeAutoYomi(name) {
+  const cleaned = cleanCustomerNameForYomi(name);
+  if (!cleaned) return '';
+
+  try {
+    const kuroshiro = await getKuroshiro();
+    const converted = await kuroshiro.convert(cleaned, {
+      to: 'katakana',
+      mode: 'normal',
+    });
+
+    return String(converted || '').replace(/\s/g, '').trim();
+  } catch (error) {
+    console.error(error);
+    return cleaned;
+  }
+}
 
 function yen(value) {
   if (value === '' || value === null || value === undefined || Number(value) === 0) return '';
@@ -308,6 +366,15 @@ export default function ConfirmCommon() {
             <input
               value={orderData.customerName || ''}
               onChange={(e) => updateField('customerName', e.target.value)}
+                onBlur={async () => {
+    const yomi = await makeAutoYomi(orderData.customerName);
+
+    setOrderData({
+      ...orderData,
+      yomi,
+      kana: getKanaGroup(yomi),
+    });
+  }}
               style={{
                 border: 'none',
                 borderBottom: '1px solid #ccc',
