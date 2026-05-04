@@ -98,7 +98,7 @@ export default function Step1() {
           </select>
 
           <div className="cell dark-gray" style={{ gridRow: '10 / 12', gridColumn: '23 / 27', fontSize: '12px', border: '1px solid #000' }}>
-            1ヶ所目
+            2ヶ所目
           </div>
 
           <select
