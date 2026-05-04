@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '../../context/OrderContext';
 
@@ -86,6 +87,35 @@ function TextInput({ row, col, value, onChange }) {
   );
 }
 
+function QuantityPickerButton({ row, col, value, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        gridRow: row,
+        gridColumn: col,
+        display: 'block',
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+        border: '1px solid #000',
+        background: '#fff',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        outline: 'none',
+        padding: 0,
+        zIndex: 3,
+        cursor: 'pointer',
+      }}
+    >
+      {value || ''}
+    </button>
+  );
+}
+
 function CopyButton({ row, col, targetIndex, onCopy }) {
   return (
     <button
@@ -113,31 +143,36 @@ function CopyButton({ row, col, targetIndex, onCopy }) {
   );
 }
 
-function WearLabel({ rowFull, rowText, col, label, bg }) {
+function PatternLabel({ rowFull, rowText, col, label, bg }) {
   return (
     <>
       <Cell row={rowFull} col={col} bg={bg} color="#fff" />
-      <Cell row={rowText} col={col} bg="transparent" color="#fff" border="none" size="11px">
+      <Cell row={rowText} col={col} bg="transparent" color="#fff" border="none" size="9px">
         {label}
       </Cell>
     </>
   );
 }
 
+function makeIndividualList(source) {
+  const base = source || [];
+  return Array.from({ length: 10 }, (_, i) => ({
+    line1: base[i]?.line1 || '',
+    line2: base[i]?.line2 || '',
+    quantity: base[i]?.quantity || '',
+  }));
+}
+
 export default function Step2Individual() {
   const router = useRouter();
   const { orderData, setOrderData } = useOrder();
 
-  const list = orderData.textIndividual || Array.from({ length: 10 }, () => ({
-    line1: '',
-    line2: '',
-  }));
+  const [pickerIndex, setPickerIndex] = useState(null);
 
-  const setText = (index, key, value) => {
-    const newList = Array.from({ length: 10 }, (_, i) => ({
-      line1: list[i]?.line1 || '',
-      line2: list[i]?.line2 || '',
-    }));
+  const list = makeIndividualList(orderData.textIndividual);
+
+  const setPatternValue = (index, key, value) => {
+    const newList = makeIndividualList(list);
 
     newList[index] = {
       ...newList[index],
@@ -152,10 +187,7 @@ export default function Step2Individual() {
   };
 
   const copyLine1To = (targetIndex) => {
-    const newList = Array.from({ length: 10 }, (_, i) => ({
-      line1: list[i]?.line1 || '',
-      line2: list[i]?.line2 || '',
-    }));
+    const newList = makeIndividualList(list);
 
     newList[targetIndex] = {
       ...newList[targetIndex],
@@ -169,20 +201,147 @@ export default function Step2Individual() {
     }));
   };
 
+  const getPatternQuantityTotal = () => {
+    return list.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
+  };
+
+  const canMoveNext = () => {
+    const totalQuantity = Number(orderData.quantity || 0);
+    const patternTotal = getPatternQuantityTotal();
+
+    if (totalQuantity !== patternTotal) {
+      alert('総数量とパターン別数量の合計が合いません');
+      return false;
+    }
+
+    return true;
+  };
+
+  const moveToStep3 = () => {
+    if (!canMoveNext()) return;
+    router.push('/step3');
+  };
+
+  const moveToConfirmIndividual = () => {
+    if (!canMoveNext()) return;
+    router.push('/confirm-individual');
+  };
+
   const clearStep2Individual = () => {
     setOrderData((prev) => ({
       ...prev,
       textIndividual: Array.from({ length: 10 }, () => ({
         line1: '',
         line2: '',
+        quantity: '',
       })),
     }));
+  };
+
+  const selectQuantity = (value) => {
+    if (pickerIndex === null) return;
+
+    setPatternValue(pickerIndex, 'quantity', value === 0 ? '' : String(value));
+    setPickerIndex(null);
+  };
+
+  const renderQuantityPicker = () => {
+    if (pickerIndex === null) return null;
+
+    const current = Number(list[pickerIndex]?.quantity || 0);
+
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(0,0,0,0.45)',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: '260px',
+            height: '360px',
+            background: '#fff',
+            border: '3px solid #000',
+            borderRadius: '16px',
+            padding: '14px',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '18px',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              marginBottom: '10px',
+            }}
+          >
+            パターン{pickerIndex + 1} 着数
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              border: '1px solid #999',
+              borderRadius: '10px',
+              background: '#f7f7f7',
+            }}
+          >
+            {Array.from({ length: 101 }, (_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => selectQuantity(i)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  height: '44px',
+                  border: 'none',
+                  borderBottom: '1px solid #ddd',
+                  background: current === i ? '#ffcc00' : '#fff',
+                  fontSize: '20px',
+                  fontWeight: current === i ? 'bold' : 'normal',
+                  cursor: 'pointer',
+                }}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setPickerIndex(null)}
+            style={{
+              marginTop: '12px',
+              height: '44px',
+              border: '2px solid #000',
+              borderRadius: '10px',
+              background: '#ff9900',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+            }}
+          >
+            キャンセル
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
     <main className="app-shell">
       <div className="ipad-frame">
-        <div className="grid-screen">
+        <div className="grid-screen" style={{ position: 'relative' }}>
           <StepCell row="1 / 3" col="1 / 5" bg="#000">START</StepCell>
           <StepCell row="1 / 3" col="5 / 9">数量</StepCell>
           <StepCell row="1 / 3" col="9 / 13">場所・向き</StepCell>
@@ -194,21 +353,23 @@ export default function Step2Individual() {
           <StepCell row="1 / 3" col="33 / 37">注文書</StepCell>
           <StepCell row="1 / 3" col="37 / 41" bg="#000">GOAL</StepCell>
 
-          <Cell row="5 / 6" col="7 / 35" border="none" size="14px" weight="bold">
-            刺繍する文字を入力してください　（胸＝10文字まで、腕＝5文字までが目安）
+          <Cell row="4 / 6" col="3 / 39" border="none" size="13px" weight="bold">
+            刺繍する文字とパターン毎の着数を入力してください（胸＝10文字まで、腕＝5文字までが目安）
           </Cell>
 
-          <Cell row="7 / 9" col="2 / 5" bg="#000" color="#fff">着数</Cell>
-          <Cell row="7 / 9" col="5 / 13" bg="#000" color="#fff">1ヶ所目/1行目</Cell>
-          <Cell row="7 / 9" col="13 / 21" bg="#000" color="#fff">
+          <Cell row="7 / 9" col="2 / 5" bg="#000" color="#fff">パターン</Cell>
+          <Cell row="7 / 9" col="5 / 12" bg="#000" color="#fff">1ヶ所目/1行目</Cell>
+          <Cell row="7 / 9" col="12 / 19" bg="#000" color="#fff">
             1ヶ所目/2行目{'\n'}または2ヶ所目
           </Cell>
+          <Cell row="7 / 9" col="19 / 21" bg="#000" color="#fff">着数</Cell>
 
-          <Cell row="7 / 9" col="21 / 24" bg="#000" color="#fff">着数</Cell>
-          <Cell row="7 / 9" col="24 / 32" bg="#000" color="#fff">1ヶ所目/1行目</Cell>
-          <Cell row="7 / 9" col="32 / 40" bg="#000" color="#fff">
+          <Cell row="7 / 9" col="21 / 24" bg="#000" color="#fff">パターン</Cell>
+          <Cell row="7 / 9" col="24 / 31" bg="#000" color="#fff">1ヶ所目/1行目</Cell>
+          <Cell row="7 / 9" col="31 / 38" bg="#000" color="#fff">
             1ヶ所目/2行目{'\n'}または2ヶ所目
           </Cell>
+          <Cell row="7 / 9" col="38 / 40" bg="#000" color="#fff">着数</Cell>
 
           {[0, 1, 2, 3, 4].map((idx) => {
             const top = 9 + idx * 2;
@@ -216,26 +377,33 @@ export default function Step2Individual() {
 
             return (
               <div key={`left-${idx}`} style={{ display: 'contents' }}>
-                <WearLabel
+                <PatternLabel
                   rowFull={`${top} / ${top + 2}`}
                   rowText={`${top} / ${top + 1}`}
                   col="2 / 5"
-                  label={`${idx + 1}着目`}
+                  label={`パターン${idx + 1}`}
                   bg={bg}
                 />
 
                 <TextInput
                   row={`${top} / ${top + 2}`}
-                  col="5 / 13"
+                  col="5 / 12"
                   value={list[idx]?.line1 || ''}
-                  onChange={(value) => setText(idx, 'line1', value)}
+                  onChange={(value) => setPatternValue(idx, 'line1', value)}
                 />
 
                 <TextInput
                   row={`${top} / ${top + 2}`}
-                  col="13 / 21"
+                  col="12 / 19"
                   value={list[idx]?.line2 || ''}
-                  onChange={(value) => setText(idx, 'line2', value)}
+                  onChange={(value) => setPatternValue(idx, 'line2', value)}
+                />
+
+                <QuantityPickerButton
+                  row={`${top} / ${top + 2}`}
+                  col="19 / 21"
+                  value={list[idx]?.quantity || ''}
+                  onClick={() => setPickerIndex(idx)}
                 />
               </div>
             );
@@ -248,26 +416,33 @@ export default function Step2Individual() {
 
             return (
               <div key={`right-${idx}`} style={{ display: 'contents' }}>
-                <WearLabel
+                <PatternLabel
                   rowFull={`${top} / ${top + 2}`}
                   rowText={`${top} / ${top + 1}`}
                   col="21 / 24"
-                  label={`${idx + 1}着目`}
+                  label={`パターン${idx + 1}`}
                   bg={bg}
                 />
 
                 <TextInput
                   row={`${top} / ${top + 2}`}
-                  col="24 / 32"
+                  col="24 / 31"
                   value={list[idx]?.line1 || ''}
-                  onChange={(value) => setText(idx, 'line1', value)}
+                  onChange={(value) => setPatternValue(idx, 'line1', value)}
                 />
 
                 <TextInput
                   row={`${top} / ${top + 2}`}
-                  col="32 / 40"
+                  col="31 / 38"
                   value={list[idx]?.line2 || ''}
-                  onChange={(value) => setText(idx, 'line2', value)}
+                  onChange={(value) => setPatternValue(idx, 'line2', value)}
+                />
+
+                <QuantityPickerButton
+                  row={`${top} / ${top + 2}`}
+                  col="38 / 40"
+                  value={list[idx]?.quantity || ''}
+                  onClick={() => setPickerIndex(idx)}
                 />
               </div>
             );
@@ -298,7 +473,7 @@ export default function Step2Individual() {
 
           <button
             className="app-button"
-            onClick={() => router.push('/step3')}
+            onClick={moveToStep3}
             style={{
               gridRow: '24 / 27',
               gridColumn: '23 / 28',
@@ -325,7 +500,7 @@ export default function Step2Individual() {
 
           <button
             className="app-button"
-            onClick={() => router.push('/confirm-individual')}
+            onClick={moveToConfirmIndividual}
             style={{
               gridRow: '29 / 31',
               gridColumn: '37 / 41',
@@ -335,6 +510,8 @@ export default function Step2Individual() {
           >
             確認画面<br />（個別）
           </button>
+
+          {renderQuantityPicker()}
         </div>
       </div>
     </main>

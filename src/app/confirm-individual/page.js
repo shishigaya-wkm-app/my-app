@@ -45,6 +45,7 @@ function getDisplayRows(rows) {
   return Array.from({ length: 10 }, (_, i) => ({
     line1: base[i]?.line1 || '',
     line2: base[i]?.line2 || '',
+    quantity: base[i]?.quantity || '',
   }));
 }
 
@@ -69,24 +70,40 @@ export default function ConfirmIndividual() {
   const rows = getDisplayRows(orderData.textIndividual);
   const quantity = Number(orderData.quantity || 0);
 
-  const firstLineTotal = rows.reduce((sum, row) => sum + calcLinePrice(row.line1), 0);
-  const secondLineTotal = rows.reduce((sum, row) => sum + calcLinePrice(row.line2), 0);
+  const firstLineAmount = rows.reduce((sum, row) => {
+    const q = Number(row.quantity || 0);
+    if (!q || !row.line1) return sum;
+    return sum + calcLinePrice(row.line1) * q;
+  }, 0);
 
-  const firstLineUsedCount = rows.filter((row) => row.line1).length;
-  const secondLineUsedCount = rows.filter((row) => row.line2).length;
+  const secondLineAmount = rows.reduce((sum, row) => {
+    const q = Number(row.quantity || 0);
+    if (!q || !row.line2) return sum;
+    return sum + calcLinePrice(row.line2) * q;
+  }, 0);
 
-  const color1Length = rows.reduce((sum, row) => sum + adjustedLength(row.line1), 0);
-  const color2Length = rows.reduce((sum, row) => sum + adjustedLength(row.line2), 0);
+const colorTargetLengthTotal = rows.reduce((sum, row) => {
+  const q = Number(row.quantity || 0);
+  if (!q) return sum;
 
-  const color1Amount = isGoldOrSilver(orderData.color1) ? color1Length * 20 : 0;
-  const color2Amount = isGoldOrSilver(orderData.color2) ? color2Length * 20 : 0;
-  const colorAmount = color1Amount + color2Amount;
+  const line1Length = isGoldOrSilver(orderData.color1)
+    ? adjustedLength(row.line1) * q
+    : 0;
 
-  const filledRowCount = rows.filter((row) => row.line1 || row.line2).length;
+  const line2Length = isGoldOrSilver(orderData.color2)
+    ? adjustedLength(row.line2) * q
+    : 0;
+
+  return sum + line1Length + line2Length;
+}, 0);
+
+const colorAmount = colorTargetLengthTotal * 20;
+
   const winterUnit = orderData.options?.winter ? 100 : 0;
-  const winterAmount = winterUnit ? filledRowCount * 100 : 0;
+  const winterQty = winterUnit ? quantity : '';
+  const winterAmount = winterUnit ? winterUnit * quantity : 0;
 
-  const total = firstLineTotal + secondLineTotal + colorAmount + winterAmount;
+  const total = firstLineAmount + secondLineAmount + colorAmount + winterAmount;
   const barcodeValue = makeBarcode(total);
 
   useEffect(() => {
@@ -120,46 +137,46 @@ export default function ConfirmIndividual() {
     });
   };
 
-function getKanaGroup(yomi) {
-  const first = String(yomi || '').trim().charAt(0);
+  function getKanaGroup(yomi) {
+    const first = String(yomi || '').trim().charAt(0);
 
-  if ('アイウエオ'.includes(first)) return 'ア行';
-  if ('カキクケコガギグゲゴ'.includes(first)) return 'カ行';
-  if ('サシスセソザジズゼゾ'.includes(first)) return 'サ行';
-  if ('タチツテトダヂヅデド'.includes(first)) return 'タ行';
-  if ('ナニヌネノ'.includes(first)) return 'ナ行';
-  if ('ハヒフヘホバビブベボパピプペポ'.includes(first)) return 'ハ行';
-  if ('マミムメモ'.includes(first)) return 'マ行';
-  if ('ヤユヨ'.includes(first)) return 'ヤ行';
-  if ('ラリルレロ'.includes(first)) return 'ラ行';
-  if ('ワヲン'.includes(first)) return 'ワ行';
+    if ('アイウエオ'.includes(first)) return 'ア行';
+    if ('カキクケコガギグゲゴ'.includes(first)) return 'カ行';
+    if ('サシスセソザジズゼゾ'.includes(first)) return 'サ行';
+    if ('タチツテトダヂヅデド'.includes(first)) return 'タ行';
+    if ('ナニヌネノ'.includes(first)) return 'ナ行';
+    if ('ハヒフヘホバビブベボパピプペポ'.includes(first)) return 'ハ行';
+    if ('マミムメモ'.includes(first)) return 'マ行';
+    if ('ヤユヨ'.includes(first)) return 'ヤ行';
+    if ('ラリルレロ'.includes(first)) return 'ラ行';
+    if ('ワヲン'.includes(first)) return 'ワ行';
 
-  return '';
-}
-
-const executePrintSave = async () => {
-  const previewWindow = window.open('', '_blank');
-
-  if (!previewWindow) {
-    alert('新しいタブを開けませんでした。ポップアップブロックを解除してください。');
-    return;
+    return '';
   }
 
-  try {
-    const result = await createSpreadsheetPdf({
-      orderData,
-      mode: 'individual',
-      savePdf: doSave,
-    });
+  const executePrintSave = async () => {
+    const previewWindow = window.open('', '_blank');
 
-    previewWindow.location.href = result.previewUrl;
-    setShowPrintPopup(false);
-  } catch (error) {
-    console.error(error);
-    previewWindow.close();
-    alert('PDF作成に失敗しました。');
-  }
-};
+    if (!previewWindow) {
+      alert('新しいタブを開けませんでした。ポップアップブロックを解除してください。');
+      return;
+    }
+
+    try {
+      const result = await createSpreadsheetPdf({
+        orderData,
+        mode: 'individual',
+        savePdf: doSave,
+      });
+
+      previewWindow.location.href = result.previewUrl;
+      setShowPrintPopup(false);
+    } catch (error) {
+      console.error(error);
+      previewWindow.close();
+      alert('PDF作成に失敗しました。');
+    }
+  };
 
   const Cell = ({
     row,
@@ -261,16 +278,14 @@ const executePrintSave = async () => {
 
           <button
             className="app-button"
-
-
-onClick={async () => {
-  try {
-    await saveOrder(orderData);
-    alert("保存しました");
-  } catch (e) {
-    alert("保存失敗");
-  }
-}}
+            onClick={async () => {
+              try {
+                await saveOrder(orderData);
+                alert("保存しました");
+              } catch (e) {
+                alert("保存失敗");
+              }
+            }}
             style={{
               gridRow: '3 / 5',
               gridColumn: '33 / 36',
@@ -309,52 +324,52 @@ onClick={async () => {
 
           <Cell row="6 / 8" col="3 / 10" bg="#000" color="#fff">お客様名</Cell>
 
-<div
-  style={{
-    gridRow: '6 / 8',
-    gridColumn: '10 / 31',
-    display: 'grid',
-    gridTemplateRows: '1fr 0.72fr',
-    border: '1px solid #000',
-    background: '#fff',
-    zIndex: 3,
-    boxSizing: 'border-box',
-  }}
->
-  <input
-    value={orderData.customerName || ''}
-    onChange={(e) => updateField('customerName', e.target.value)}
-    style={{
-      border: 'none',
-      borderBottom: '1px solid #ccc',
-      fontSize: '14px',
-      paddingLeft: '8px',
-      outline: 'none',
-      boxSizing: 'border-box',
-    }}
-  />
+          <div
+            style={{
+              gridRow: '6 / 8',
+              gridColumn: '10 / 31',
+              display: 'grid',
+              gridTemplateRows: '1fr 0.72fr',
+              border: '1px solid #000',
+              background: '#fff',
+              zIndex: 3,
+              boxSizing: 'border-box',
+            }}
+          >
+            <input
+              value={orderData.customerName || ''}
+              onChange={(e) => updateField('customerName', e.target.value)}
+              style={{
+                border: 'none',
+                borderBottom: '1px solid #ccc',
+                fontSize: '14px',
+                paddingLeft: '8px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
 
-  <input
-    value={orderData.yomi || ''}
-    onChange={(e) => {
-      const yomi = e.target.value;
-      setOrderData({
-        ...orderData,
-        yomi,
-        kana: getKanaGroup(yomi),
-      });
-    }}
-    placeholder="フリガナ"
-    style={{
-      border: 'none',
-      fontSize: '10px',
-      paddingLeft: '8px',
-      outline: 'none',
-      color: '#333',
-      boxSizing: 'border-box',
-    }}
-  />
-</div>
+            <input
+              value={orderData.yomi || ''}
+              onChange={(e) => {
+                const yomi = e.target.value;
+                setOrderData({
+                  ...orderData,
+                  yomi,
+                  kana: getKanaGroup(yomi),
+                });
+              }}
+              placeholder="フリガナ"
+              style={{
+                border: 'none',
+                fontSize: '10px',
+                paddingLeft: '8px',
+                outline: 'none',
+                color: '#333',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
 
           <Cell row="6 / 8" col="31 / 36" bg="#000" color="#fff">
             保存先{'\n'}グループ
@@ -391,6 +406,11 @@ onClick={async () => {
           <ChangeButton row="12 / 14" col="6 / 9" onClick={() => router.push('/step2-individual')} />
 
           <Cell row="14 / 34" col="3 / 6" bg="transparent" border="none" />
+
+          <Cell row="12 / 14" col="9 / 23" bg="#dddddd">1ヶ所目/1行目</Cell>
+          <Cell row="12 / 14" col="23 / 36" bg="#dddddd">1ヶ所目/2行目 または 2ヶ所目</Cell>
+          <Cell row="12 / 14" col="36 / 39" bg="#dddddd">着数</Cell>
+
           {rows.map((row, index) => {
             const top = 14 + index * 2;
             const bottom = top + 2;
@@ -398,48 +418,54 @@ onClick={async () => {
 
             return (
               <div key={`confirm-individual-row-${index}`} style={{ display: 'contents' }}>
-                <Cell row={`${top} / ${bottom}`} col="6 / 9" bg={labelBg} color="#fff" size="11px">
-                  {index + 1}着目
+                <Cell row={`${top} / ${bottom}`} col="6 / 9" bg={labelBg} color="#fff" size="9px">
+                  パターン{index + 1}
                 </Cell>
 
-                <Cell row={`${top} / ${bottom}`} col="9 / 24" size={getFontSize(row.line1)}>
+                <Cell row={`${top} / ${bottom}`} col="9 / 23" size={getFontSize(row.line1)}>
                   {row.line1}
                 </Cell>
 
-                <Cell row={`${top} / ${bottom}`} col="24 / 39" size={getFontSize(row.line2)}>
+                <Cell row={`${top} / ${bottom}`} col="23 / 36" size={getFontSize(row.line2)}>
                   {row.line2}
+                </Cell>
+
+                <Cell row={`${top} / ${bottom}`} col="36 / 39" size="14px" weight="bold">
+                  {row.quantity || ''}
                 </Cell>
               </div>
             );
           })}
 
-          <Cell row="12 / 14" col="9 / 24" bg="#dddddd">1ヶ所目/1行目</Cell>
-          <Cell row="12 / 14" col="24 / 39" bg="#dddddd">1ヶ所目/2行目 または 2ヶ所目</Cell>
-
           <LeftLabel row="34 / 36">場所</LeftLabel>
           <ChangeButton row="34 / 36" onClick={() => router.push('/step1')} />
-          <Cell row="34 / 36" col="9 / 24" size="14px">{orderData.position1}</Cell>
-          <Cell row="34 / 36" col="24 / 39" size="14px">{orderData.position2}</Cell>
+<Cell row="34 / 36" col="9 / 23" size="14px">{orderData.position1}</Cell>
+<Cell row="34 / 36" col="23 / 36" size="14px">{orderData.position2}</Cell>
+<Cell row="34 / 36" col="36 / 39" bg="#dddddd" />
 
           <LeftLabel row="36 / 38">向き</LeftLabel>
           <ChangeButton row="36 / 38" onClick={() => router.push('/step1')} />
-          <Cell row="36 / 38" col="9 / 24" size="14px">{orderData.direction1}</Cell>
-          <Cell row="36 / 38" col="24 / 39" size="14px">{orderData.direction2}</Cell>
+<Cell row="36 / 38" col="9 / 23" size="14px">{orderData.direction1}</Cell>
+<Cell row="36 / 38" col="23 / 36" size="14px">{orderData.direction2}</Cell>
+<Cell row="36 / 38" col="36 / 39" bg="#dddddd" />
 
           <LeftLabel row="38 / 40">糸色</LeftLabel>
           <ChangeButton row="38 / 40" onClick={() => router.push('/step3')} />
-          <Cell row="38 / 40" col="9 / 24" size="14px">{orderData.color1}</Cell>
-          <Cell row="38 / 40" col="24 / 39" size="14px">{orderData.color2}</Cell>
+<Cell row="38 / 40" col="9 / 23" size="14px">{orderData.color1}</Cell>
+<Cell row="38 / 40" col="23 / 36" size="14px">{orderData.color2}</Cell>
+<Cell row="38 / 40" col="36 / 39" bg="#dddddd" />
 
           <LeftLabel row="40 / 42">書体</LeftLabel>
           <ChangeButton row="40 / 42" onClick={() => router.push('/step4')} />
-          <Cell row="40 / 42" col="9 / 24" size="14px">{orderData.font1}</Cell>
-          <Cell row="40 / 42" col="24 / 39" size="14px">{orderData.font2}</Cell>
+<Cell row="40 / 42" col="9 / 23" size="14px">{orderData.font1}</Cell>
+<Cell row="40 / 42" col="23 / 36" size="14px">{orderData.font2}</Cell>
+<Cell row="40 / 42" col="36 / 39" bg="#dddddd" />
 
           <LeftLabel row="42 / 44">大きさ</LeftLabel>
           <ChangeButton row="42 / 44" onClick={() => router.push('/step5')} />
-          <Cell row="42 / 44" col="9 / 24" size="14px">{orderData.size1}</Cell>
-          <Cell row="42 / 44" col="24 / 39" size="14px">{orderData.size2}</Cell>
+<Cell row="42 / 44" col="9 / 23" size="14px">{orderData.size1}</Cell>
+<Cell row="42 / 44" col="23 / 36" size="14px">{orderData.size2}</Cell>
+<Cell row="42 / 44" col="36 / 39" bg="#dddddd" />
 
           <LeftLabel row="44 / 46">追加項目</LeftLabel>
           <ChangeButton row="44 / 46" onClick={() => router.push('/step6')} />
@@ -472,18 +498,26 @@ onClick={async () => {
           <Cell row="56 / 58" col="3 / 15" bg="#dddddd">糸色追加料金(金・銀)</Cell>
           <Cell row="58 / 60" col="3 / 15" bg="#dddddd">追加料金項目</Cell>
 
-          <Cell row="52 / 54" col="15 / 23" size="14px" justify="flex-end">{yen(firstLineTotal)}</Cell>
-          <Cell row="54 / 56" col="15 / 23" size="14px" justify="flex-end">{yen(secondLineTotal)}</Cell>
+          <Cell row="52 / 54" col="15 / 23" size="14px" justify="flex-end">{yen(firstLineAmount)}</Cell>
+          <Cell row="54 / 56" col="15 / 23" size="14px" justify="flex-end">{yen(secondLineAmount)}</Cell>
           <Cell row="56 / 58" col="15 / 23" size="14px" justify="flex-end">{yen(colorAmount)}</Cell>
           <Cell row="58 / 60" col="15 / 23" size="14px" justify="flex-end">{yen(winterUnit)}</Cell>
 
-          <Cell row="52 / 54" col="23 / 31" size="14px" justify="flex-end">{firstLineUsedCount ? 1 : ''}</Cell>
-          <Cell row="54 / 56" col="23 / 31" size="14px" justify="flex-end">{secondLineUsedCount ? 1 : ''}</Cell>
-          <Cell row="56 / 58" col="23 / 31" size="14px" justify="flex-end">{colorAmount ? 1 : ''}</Cell>
-          <Cell row="58 / 60" col="23 / 31" size="14px" justify="flex-end">{winterAmount ? filledRowCount : ''}</Cell>
+<Cell row="52 / 54" col="23 / 31" size="14px" justify="flex-end">
+  {firstLineAmount ? 1 : ''}
+</Cell>
+<Cell row="54 / 56" col="23 / 31" size="14px" justify="flex-end">
+  {secondLineAmount ? 1 : ''}
+</Cell>
+<Cell row="56 / 58" col="23 / 31" size="14px" justify="flex-end">
+  {colorAmount ? 1 : ''}
+</Cell>
+<Cell row="58 / 60" col="23 / 31" size="14px" justify="flex-end">
+  {winterQty}
+</Cell>
 
-          <Cell row="52 / 54" col="31 / 39" size="14px" justify="flex-end">{yen(firstLineTotal)}</Cell>
-          <Cell row="54 / 56" col="31 / 39" size="14px" justify="flex-end">{yen(secondLineTotal)}</Cell>
+          <Cell row="52 / 54" col="31 / 39" size="14px" justify="flex-end">{yen(firstLineAmount)}</Cell>
+          <Cell row="54 / 56" col="31 / 39" size="14px" justify="flex-end">{yen(secondLineAmount)}</Cell>
           <Cell row="56 / 58" col="31 / 39" size="14px" justify="flex-end">{yen(colorAmount)}</Cell>
           <Cell row="58 / 60" col="31 / 39" size="14px" justify="flex-end">{yen(winterAmount)}</Cell>
 
@@ -557,35 +591,35 @@ onClick={async () => {
                   fontWeight: 'bold',
                 }}
               >
-<div style={{ fontSize: '20px', marginBottom: '18px' }}>
-  印刷イメージを表示します
-</div>
+                <div style={{ fontSize: '20px', marginBottom: '18px' }}>
+                  印刷イメージを表示します
+                </div>
 
-<label style={{ display: 'block', fontSize: '18px', marginBottom: '20px' }}>
-  <input
-    type="checkbox"
-    checked={doSave}
-    onChange={(e) => setDoSave(e.target.checked)}
-    style={{ width: '22px', height: '22px', marginRight: '10px' }}
-  />
-  PDFデータを保存する
-</label>
+                <label style={{ display: 'block', fontSize: '18px', marginBottom: '20px' }}>
+                  <input
+                    type="checkbox"
+                    checked={doSave}
+                    onChange={(e) => setDoSave(e.target.checked)}
+                    style={{ width: '22px', height: '22px', marginRight: '10px' }}
+                  />
+                  PDFデータを保存する
+                </label>
 
-<button
-  className="app-button"
-  onClick={executePrintSave}
-  style={{ width: '110px', height: '45px', fontSize: '16px', marginRight: '16px' }}
->
-  実行
-</button>
+                <button
+                  className="app-button"
+                  onClick={executePrintSave}
+                  style={{ width: '110px', height: '45px', fontSize: '16px', marginRight: '16px' }}
+                >
+                  実行
+                </button>
 
-<button
-  className="app-button"
-  onClick={() => setShowPrintPopup(false)}
-  style={{ width: '110px', height: '45px', fontSize: '16px' }}
->
-  キャンセル
-</button>
+                <button
+                  className="app-button"
+                  onClick={() => setShowPrintPopup(false)}
+                  style={{ width: '110px', height: '45px', fontSize: '16px' }}
+                >
+                  キャンセル
+                </button>
               </div>
             </div>
           )}
