@@ -114,6 +114,23 @@ export default function ConfirmCommon() {
     });
   };
 
+  function getKanaGroup(yomi) {
+    const first = String(yomi || '').trim().charAt(0);
+
+    if ('アイウエオ'.includes(first)) return 'ア行';
+    if ('カキクケコガギグゲゴ'.includes(first)) return 'カ行';
+    if ('サシスセソザジズゼゾ'.includes(first)) return 'サ行';
+    if ('タチツテトダヂヅデド'.includes(first)) return 'タ行';
+    if ('ナニヌネノ'.includes(first)) return 'ナ行';
+    if ('ハヒフヘホバビブベボパピプペポ'.includes(first)) return 'ハ行';
+    if ('マミムメモ'.includes(first)) return 'マ行';
+    if ('ヤユヨ'.includes(first)) return 'ヤ行';
+    if ('ラリルレロ'.includes(first)) return 'ラ行';
+    if ('ワヲン'.includes(first)) return 'ワ行';
+
+    return '';
+  }
+
   const executePrintSave = () => {
     if (!doPrint && !doSave) {
       alert('印刷または保存を選択してください。');
@@ -230,14 +247,14 @@ export default function ConfirmCommon() {
 
           <button
             className="app-button"
-onClick={async () => {
-  try {
-    await saveOrder(orderData);
-    alert("保存しました");
-  } catch (e) {
-    alert("保存失敗");
-  }
-}}
+            onClick={async () => {
+              try {
+                await saveOrder(orderData);
+                alert("保存しました");
+              } catch (e) {
+                alert("保存失敗");
+              }
+            }}
             style={{
               gridRow: '3 / 5',
               gridColumn: '33 / 36',
@@ -305,9 +322,10 @@ onClick={async () => {
               value={orderData.yomi || ''}
               onChange={(e) => {
                 const yomi = e.target.value;
+
                 setOrderData({
                   ...orderData,
-                  yomi,
+                  yomi: yomi,
                   kana: getKanaGroup(yomi),
                 });
               }}
@@ -434,22 +452,22 @@ onClick={async () => {
           <Cell row="42 / 44" col="31 / 39" size="14px" justify="flex-end">{yen(colorAmount)}</Cell>
           <Cell row="44 / 46" col="31 / 39" size="14px" justify="flex-end">{yen(optionAmount)}</Cell>
 
-<Cell
-  row="46 / 48"
-  col="3 / 39"
-  border="2px solid #000"
-  bg="transparent"
-  style={{
-    pointerEvents: 'none',
-    zIndex: 10,
-  }}
-/>
+          <Cell
+            row="46 / 48"
+            col="3 / 39"
+            border="2px solid #000"
+            bg="transparent"
+            style={{
+              pointerEvents: 'none',
+              zIndex: 10,
+            }}
+          />
 
-<Cell
-  row="46 / 48"
-  col="3 / 15"
-  bg="#dddddd"
-  border="2px solid #000"
+          <Cell
+            row="46 / 48"
+            col="3 / 15"
+            bg="#dddddd"
+            border="2px solid #000"
             weight="bold"
             style={{ zIndex: 2 }}
           >
