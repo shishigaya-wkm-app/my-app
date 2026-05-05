@@ -256,83 +256,128 @@ note: order.note || '',
             </div>
           )}
 
-          {popupType === 'customers' && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(0,0,0,0.45)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 50,
-              }}
-            >
+{popupType === 'customers' && (
+  <div
+    style={{
+      position: 'absolute',
+      inset: 0,
+      background: 'rgba(0,0,0,0.45)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 50,
+    }}
+  >
+    <div
+      style={{
+        width: '62%',
+        maxHeight: '75%',
+        overflowY: 'auto',
+        background: '#fff',
+        border: '3px solid #000',
+        borderRadius: '14px',
+        padding: '0 18px 18px 18px',
+        boxSizing: 'border-box',
+      }}
+    >
+      {/* 右上に常駐する×ボタン行 */}
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 60,
+          background: '#fff',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          height: '46px',
+          paddingTop: '8px',
+          boxSizing: 'border-box',
+        }}
+      >
+        <button
+          onClick={closePopup}
+          style={{
+            width: '36px',
+            height: '36px',
+            border: 'none',
+            borderRadius: '50%',
+            background: '#ff9900',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            lineHeight: '36px',
+            textAlign: 'center',
+            padding: 0,
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      <div
+        style={{
+          fontSize: '20px',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          marginBottom: '14px',
+        }}
+      >
+        {selectedKana}のお客様一覧
+      </div>
+
+      {customers.length === 0 ? (
+        <div style={{ textAlign: 'center', fontSize: '16px', padding: '20px' }}>
+          該当する履歴がありません
+        </div>
+      ) : (
+        customers.map((customer) => (
+          <button
+            key={customer.customerName}
+            onClick={() => loadOrders(customer.customerName)}
+            style={{
+              display: 'flex',
+              width: '100%',
+              marginBottom: '8px',
+              padding: '7px 12px',
+              background: '#dddddd',
+              border: '1px solid #000',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              justifyContent: 'flex-start',
+              alignItems: 'center',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ width: '100%' }}>
               <div
                 style={{
-                  width: '62%',
-                  maxHeight: '75%',
-                  overflowY: 'auto',
-                  background: '#fff',
-                  border: '3px solid #000',
-                  borderRadius: '14px',
-                  padding: '18px',
+                  fontSize: '10px',
+                  color: '#555',
+                  lineHeight: 1.1,
+                  textAlign: 'left',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '20px',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    marginBottom: '14px',
-                  }}
-                >
-                  {selectedKana}のお客様一覧
-                </div>
+                {customer.yomi || ''}
+              </div>
 
-                {customers.length === 0 ? (
-                  <div style={{ textAlign: 'center', fontSize: '16px', padding: '20px' }}>
-                    該当する履歴がありません
-                  </div>
-                ) : (
-                  customers.map((customer) => (
-                    <button
-                      key={customer.customerName}
-                      onClick={() => loadOrders(customer.customerName)}
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        marginBottom: '8px',
-                        padding: '7px 12px',
-                        fontSize: '18px',
-                        background: '#dddddd',
-                        border: '1px solid #000',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {customer.customerName}
-                    </button>
-                  ))
-                )}
-
-                <button
-                  onClick={closePopup}
-                  className="app-button"
-                  style={{
-                    display: 'block',
-                    margin: '16px auto 0',
-                    width: '120px',
-                    height: '42px',
-                    fontSize: '14px',
-                    background: '#ff9900',
-                  }}
-                >
-                  閉じる
-                </button>
+              <div
+                style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  lineHeight: 1.25,
+                  textAlign: 'left',
+                }}
+              >
+                {customer.customerName}
               </div>
             </div>
-          )}
+          </button>
+        ))
+      )}
+    </div>
+  </div>
+)}
 
           {popupType === 'orders' && (
             <div
