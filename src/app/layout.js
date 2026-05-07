@@ -4,7 +4,13 @@ import "./globals.css";
 export const metadata = {
   title: "ネーム刺繍注文受付アプリ",
   description: "ネーム刺繍注文受付アプリ",
+
   manifest: "/manifest.json",
+
+  icons: {
+    apple: "/name.png",
+  },
+
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
