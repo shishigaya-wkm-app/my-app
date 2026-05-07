@@ -347,7 +347,27 @@ export default function ConfirmCommon() {
           <Cell row="4 / 5" col="17 / 25" border="none">お客様情報入力欄</Cell>
 
           <Cell row="5 / 6" col="3 / 6" border="none" justify="flex-end">注文日:</Cell>
-          <Cell row="5 / 6" col="6 / 11" border="none" justify="flex-start">{todayText()}</Cell>
+          <input
+  type="text"
+  value={orderData.orderDate || todayText()}
+  onChange={(e) =>
+    setOrderData({
+      ...orderData,
+      orderDate: e.target.value,
+    })
+  }
+  style={{
+    gridRow: '5 / 6',
+    gridColumn: '6 / 11',
+    border: 'none',
+    fontSize: '14px',
+    textAlign: 'left',
+    paddingLeft: '4px',
+    background: 'transparent',
+    outline: 'none',
+    zIndex: 3,
+  }}
+/>
 
           <Cell row="6 / 8" col="3 / 10" bg="#000" color="#fff">お客様名</Cell>
 
