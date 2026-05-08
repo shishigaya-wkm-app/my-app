@@ -6,6 +6,7 @@ import JsBarcode from 'jsbarcode';
 import { useOrder } from '../../context/OrderContext';
 import { calcLinePrice, isGoldOrSilver } from '../../lib/calc';
 import { saveOrder } from "../../lib/saveOrder";
+import { createSpreadsheetPdf } from '../../lib/createSpreadsheetPdf';
 
 const kanaOptions = ['ア行', 'カ行', 'サ行', 'タ行', 'ナ行', 'ハ行', 'マ行', 'ヤ行', 'ラ行', 'ワ行'];
 let kuroshiroInstance = null;
@@ -189,15 +190,29 @@ export default function ConfirmCommon() {
     return '';
   }
 
-  const executePrintSave = () => {
-    if (!doPrint && !doSave) {
-      alert('印刷または保存を選択してください。');
-      return;
-    }
+const executePrintSave = async () => {
+  const previewWindow = window.open('', '_blank');
 
-    alert('PDF作成・DB保存は次工程で実装します。');
+  if (!previewWindow) {
+    alert('新しいタブを開けませんでした。ポップアップブロックを解除してください。');
+    return;
+  }
+
+  try {
+    const result = await createSpreadsheetPdf({
+      orderData,
+      mode: 'common',
+      savePdf: doSave,
+    });
+
+    previewWindow.location.href = result.previewUrl;
     setShowPrintPopup(false);
-  };
+  } catch (error) {
+    console.error(error);
+    previewWindow.close();
+    alert('PDF作成に失敗しました。');
+  }
+};
 
   const Cell = ({
     row,
