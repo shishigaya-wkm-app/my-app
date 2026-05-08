@@ -612,8 +612,18 @@ const colorAmount = colorTargetLengthTotal * 20;
                 }}
               >
                 <div style={{ fontSize: '20px', marginBottom: '18px' }}>
-                  印刷イメージを表示します
+                  処理を選択してください
                 </div>
+
+                <label style={{ display: 'block', fontSize: '18px', marginBottom: '12px' }}>
+                  <input
+                    type="checkbox"
+                    checked={doPrint}
+                    onChange={(e) => setDoPrint(e.target.checked)}
+                    style={{ width: '22px', height: '22px', marginRight: '10px' }}
+                  />
+                  印刷する
+                </label>
 
                 <label style={{ display: 'block', fontSize: '18px', marginBottom: '20px' }}>
                   <input

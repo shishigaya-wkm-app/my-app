@@ -645,13 +645,13 @@ const executePrintSave = async () => {
                     onChange={(e) => setDoSave(e.target.checked)}
                     style={{ width: '22px', height: '22px', marginRight: '10px' }}
                   />
-                  保存する
+                  PDFデータを保存する
                 </label>
 
                 <button
                   className="app-button"
                   onClick={executePrintSave}
-                  style={{ width: '110px', height: '45px', fontSize: '16px', marginRight: '16px' }}
+                  style={{ width: '110px', height: '45px', fontSize: '14px', marginRight: '16px' }}
                 >
                   実行
                 </button>
@@ -659,7 +659,7 @@ const executePrintSave = async () => {
                 <button
                   className="app-button"
                   onClick={() => setShowPrintPopup(false)}
-                  style={{ width: '110px', height: '45px', fontSize: '16px' }}
+                  style={{ width: '110px', height: '45px', fontSize: '14px' }}
                 >
                   キャンセル
                 </button>
