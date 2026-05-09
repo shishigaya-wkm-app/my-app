@@ -13,14 +13,34 @@ function getTodayBase() {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function normalizeDateBase(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw) return getTodayBase();
+
+  const match = raw.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+
+  if (!match) return getTodayBase();
+
+  const year = match[1];
+  const month = String(match[2]).padStart(2, "0");
+  const day = String(match[3]).padStart(2, "0");
+
+  return `${year}/${month}/${day}`;
+}
+
+function makeSortDate(baseDate) {
+  return String(baseDate || "").replace(/\//g, "");
+}
+
 function normalizeMode(orderData) {
   if (orderData.mode === "individual") return "individual";
   if (orderData.textIndividual?.some((row) => row?.line1 || row?.line2)) return "individual";
   return "common";
 }
 
-async function makeOrderDate(customerName) {
-  const baseDate = getTodayBase();
+async function makeOrderDate(customerName, orderData) {
+  const baseDate = normalizeDateBase(orderData.orderDate);
 
   const q = query(
     collection(db, "orders"),
@@ -33,7 +53,9 @@ async function makeOrderDate(customerName) {
 
   return {
     orderDateBase: baseDate,
+    branch,
     orderDate: `${baseDate}-${branch}`,
+    sortKey: `${makeSortDate(baseDate)}-${branch}`,
   };
 }
 
@@ -54,6 +76,7 @@ function buildIndividualData(orderData) {
     textIndividual: Array.from({ length: 10 }, (_, i) => ({
       line1: rows[i]?.line1 || "",
       line2: rows[i]?.line2 || "",
+      quantity: rows[i]?.quantity || "",
     })),
   };
 }
@@ -61,16 +84,24 @@ function buildIndividualData(orderData) {
 export const saveOrder = async (orderData) => {
   const mode = normalizeMode(orderData);
   const customerName = orderData.customerName || "";
-  const { orderDateBase, orderDate } = await makeOrderDate(customerName);
+
+  const { orderDateBase, branch, orderDate, sortKey } = await makeOrderDate(
+    customerName,
+    orderData
+  );
 
   const baseData = {
     orderDate,
     orderDateBase,
+    branch,
+    sortKey,
 
     customerName,
     kana: orderData.kana || "",
     yomi: orderData.yomi || "",
     mode,
+
+    quantity: orderData.quantity || "",
 
     position1: orderData.position1 || "",
     position2: orderData.position2 || "",
@@ -87,7 +118,13 @@ export const saveOrder = async (orderData) => {
     size1: orderData.size1 || "",
     size2: orderData.size2 || "",
 
+    options: {
+      winter: !!orderData.options?.winter,
+    },
+
     note: orderData.note || "",
+
+    displayName: `${orderDate}_${customerName}_${mode === "individual" ? "個別" : "共通"}`,
 
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

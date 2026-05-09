@@ -87,7 +87,9 @@ const list = Array.from(customerMap.values()).sort((a, b) =>
         });
       });
 
-      list.sort((a, b) => String(b.orderDate || '').localeCompare(String(a.orderDate || '')));
+      list.sort((a, b) =>
+  String(b.sortKey || '').localeCompare(String(a.sortKey || ''))
+);
 
       setOrders(list);
       setPopupType('orders');
