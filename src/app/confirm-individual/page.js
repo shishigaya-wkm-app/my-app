@@ -214,24 +214,6 @@ const colorAmount = colorTargetLengthTotal * 20;
     return '';
   }
 
-const executeFastPdfTest = async () => {
-  const previewWindow = window.open('', '_blank');
-
-  if (!previewWindow) {
-    alert('新しいタブを開けませんでした。');
-    return;
-  }
-
-  try {
-    const previewUrl = await createIndividualOrderPdf(orderData);
-    previewWindow.location.href = previewUrl;
-  } catch (error) {
-    console.error(error);
-    previewWindow.close();
-    alert('高速PDF作成に失敗しました。');
-  }
-};
-
 const executePrintSave = async () => {
   if (!doPrint && !doSave) {
     alert('印刷または保存を選択してください。');
@@ -250,20 +232,23 @@ const executePrintSave = async () => {
   }
 
   try {
-    const result = await createSpreadsheetPdf({
-      orderData,
-      mode: 'individual',
-      savePdf: doSave,
-    });
-
     if (doPrint && previewWindow) {
-      previewWindow.location.href = result.previewUrl;
+      const previewUrl = await createIndividualOrderPdf(orderData);
+      previewWindow.location.href = previewUrl;
     }
 
     setShowPrintPopup(false);
 
-    if (!doPrint && doSave) {
-      alert('PDFデータを保存しました。');
+    if (doSave) {
+      await createSpreadsheetPdf({
+        orderData,
+        mode: 'individual',
+        savePdf: true,
+      });
+
+      if (!doPrint) {
+        alert('PDFデータを保存しました。');
+      }
     }
   } catch (error) {
     console.error(error);
@@ -414,24 +399,6 @@ const executePrintSave = async () => {
           >
             印刷
           </button>
-
-          <button
-  className="app-button"
-  onClick={executeFastPdfTest}
-  style={{
-    gridRow: '3 / 5',
-    gridColumn: '39 / 41',
-    width: '90%',
-    height: '90%',
-    alignSelf: 'center',
-    justifySelf: 'center',
-    fontSize: '9px',
-    zIndex: 5,
-    background: '#99cc00',
-  }}
->
-  高速PDF
-</button>
 
           <Cell row="4 / 5" col="17 / 25" border="none">お客様情報入力欄</Cell>
 
