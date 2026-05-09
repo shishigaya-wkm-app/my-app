@@ -71,8 +71,18 @@ export async function createSpreadsheetPdf({ orderData, mode, savePdf }) {
     throw new Error(json.error || 'PDF作成に失敗しました');
   }
 
-  const blob = base64ToPdfBlob(json.pdfBase64);
-  const previewUrl = URL.createObjectURL(blob);
+const blob = base64ToPdfBlob(json.pdfBase64);
+const previewUrl = URL.createObjectURL(blob);
+
+console.log('PDF URL確認:', {
+  previewUrl,
+  viewUrl: json.viewUrl,
+  downloadUrl: json.downloadUrl,
+});
+
+if (!previewUrl) {
+  throw new Error('PDF表示用URLが返ってきていません');
+}
 
   if (savePdf && json.fileId) {
     await addDoc(collection(db, 'pdfOrders'), {
@@ -89,13 +99,12 @@ export async function createSpreadsheetPdf({ orderData, mode, savePdf }) {
     });
   }
 
-  return {
-    blob,
-    previewUrl,
-    fileName: json.fileName || '',
-    fileId: json.fileId || '',
-    viewUrl: json.viewUrl || '',
-    downloadUrl: json.downloadUrl || '',
-    orderDate,
-  };
+return {
+  blob,
+  previewUrl,
+  fileName: json.fileName || '',
+  fileId: json.fileId || '',
+  viewUrl: json.viewUrl || '',
+  downloadUrl: json.downloadUrl || '',
+};
 }

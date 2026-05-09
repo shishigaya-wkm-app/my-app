@@ -7,8 +7,67 @@ import { useOrder } from '../../context/OrderContext';
 import { calcLinePrice, isGoldOrSilver } from '../../lib/calc';
 import { saveOrder } from "../../lib/saveOrder";
 import { createSpreadsheetPdf } from '../../lib/createSpreadsheetPdf';
+import { createIndividualOrderPdf } from '../../lib/pdf/createIndividualOrderPdf';
 
 const kanaOptions = ['ア行', 'カ行', 'サ行', 'タ行', 'ナ行', 'ハ行', 'マ行', 'ヤ行', 'ラ行', 'ワ行'];
+let kuroshiroInstance = null;
+let kuroshiroInitializing = null;
+
+async function getKuroshiro() {
+  if (kuroshiroInstance) return kuroshiroInstance;
+
+  if (!kuroshiroInitializing) {
+    kuroshiroInitializing = (async () => {
+      const KuroshiroModule = await import('kuroshiro');
+      const KuromojiAnalyzerModule = await import('kuroshiro-analyzer-kuromoji');
+
+      const Kuroshiro = KuroshiroModule.default;
+      const KuromojiAnalyzer = KuromojiAnalyzerModule.default;
+
+      const kuroshiro = new Kuroshiro();
+      await kuroshiro.init(new KuromojiAnalyzer({ dictPath: '/dict' }));
+
+      kuroshiroInstance = kuroshiro;
+      return kuroshiro;
+    })();
+  }
+
+  return kuroshiroInitializing;
+}
+
+function cleanCustomerNameForYomi(name) {
+  return String(name || '')
+    .replace(/株式会社/g, '')
+    .replace(/有限会社/g, '')
+    .replace(/合同会社/g, '')
+    .replace(/㈱/g, '')
+    .replace(/㈲/g, '')
+    .replace(/\(株\)/g, '')
+    .replace(/（株）/g, '')
+    .replace(/\(有\)/g, '')
+    .replace(/（有）/g, '')
+    .replace(/\(同\)/g, '')
+    .replace(/（同）/g, '')
+    .trim();
+}
+
+async function makeAutoYomi(name) {
+  const cleaned = cleanCustomerNameForYomi(name);
+  if (!cleaned) return '';
+
+  try {
+    const kuroshiro = await getKuroshiro();
+    const converted = await kuroshiro.convert(cleaned, {
+      to: 'katakana',
+      mode: 'normal',
+    });
+
+    return String(converted || '').replace(/\s/g, '').trim();
+  } catch (error) {
+    console.error(error);
+    return cleaned;
+  }
+}
 
 function yen(value) {
   if (value === '' || value === null || value === undefined || Number(value) === 0) return '';
@@ -64,8 +123,9 @@ export default function ConfirmIndividual() {
 
   const barcodeRef = useRef(null);
 
-  const [showPrintPopup, setShowPrintPopup] = useState(false);
-  const [doSave, setDoSave] = useState(true);
+const [showPrintPopup, setShowPrintPopup] = useState(false);
+const [doPrint, setDoPrint] = useState(true);
+const [doSave, setDoSave] = useState(true);
 
   const rows = getDisplayRows(orderData.textIndividual);
   const quantity = Number(orderData.quantity || 0);
@@ -154,29 +214,67 @@ const colorAmount = colorTargetLengthTotal * 20;
     return '';
   }
 
-  const executePrintSave = async () => {
-    const previewWindow = window.open('', '_blank');
+const executeFastPdfTest = async () => {
+  const previewWindow = window.open('', '_blank');
+
+  if (!previewWindow) {
+    alert('新しいタブを開けませんでした。');
+    return;
+  }
+
+  try {
+    const previewUrl = await createIndividualOrderPdf(orderData);
+    previewWindow.location.href = previewUrl;
+  } catch (error) {
+    console.error(error);
+    previewWindow.close();
+    alert('高速PDF作成に失敗しました。');
+  }
+};
+
+const executePrintSave = async () => {
+  if (!doPrint && !doSave) {
+    alert('印刷または保存を選択してください。');
+    return;
+  }
+
+  let previewWindow = null;
+
+  if (doPrint) {
+    previewWindow = window.open('', '_blank');
 
     if (!previewWindow) {
       alert('新しいタブを開けませんでした。ポップアップブロックを解除してください。');
       return;
     }
+  }
 
-    try {
-      const result = await createSpreadsheetPdf({
-        orderData,
-        mode: 'individual',
-        savePdf: doSave,
-      });
+  try {
+    const result = await createSpreadsheetPdf({
+      orderData,
+      mode: 'individual',
+      savePdf: doSave,
+    });
 
+    if (doPrint && previewWindow) {
       previewWindow.location.href = result.previewUrl;
-      setShowPrintPopup(false);
-    } catch (error) {
-      console.error(error);
-      previewWindow.close();
-      alert('PDF作成に失敗しました。');
     }
-  };
+
+    setShowPrintPopup(false);
+
+    if (!doPrint && doSave) {
+      alert('PDFデータを保存しました。');
+    }
+  } catch (error) {
+    console.error(error);
+
+    if (previewWindow) {
+      previewWindow.close();
+    }
+
+    alert('PDF作成に失敗しました。');
+  }
+};
 
   const Cell = ({
     row,
@@ -317,6 +415,24 @@ const colorAmount = colorTargetLengthTotal * 20;
             印刷
           </button>
 
+          <button
+  className="app-button"
+  onClick={executeFastPdfTest}
+  style={{
+    gridRow: '3 / 5',
+    gridColumn: '39 / 41',
+    width: '90%',
+    height: '90%',
+    alignSelf: 'center',
+    justifySelf: 'center',
+    fontSize: '9px',
+    zIndex: 5,
+    background: '#99cc00',
+  }}
+>
+  高速PDF
+</button>
+
           <Cell row="4 / 5" col="17 / 25" border="none">お客様情報入力欄</Cell>
 
           <Cell row="5 / 6" col="3 / 6" border="none" justify="flex-end">注文日:</Cell>
@@ -359,6 +475,15 @@ const colorAmount = colorTargetLengthTotal * 20;
             <input
               value={orderData.customerName || ''}
               onChange={(e) => updateField('customerName', e.target.value)}
+              onBlur={async () => {
+  const yomi = await makeAutoYomi(orderData.customerName);
+
+  setOrderData({
+    ...orderData,
+    yomi,
+    kana: getKanaGroup(yomi),
+  });
+}}
               style={{
                 border: 'none',
                 borderBottom: '1px solid #ccc',
@@ -611,34 +736,65 @@ const colorAmount = colorTargetLengthTotal * 20;
                   fontWeight: 'bold',
                 }}
               >
-                <div style={{ fontSize: '20px', marginBottom: '18px' }}>
-                  処理を選択してください
-                </div>
+<div style={{ fontSize: '20px', marginBottom: '18px' }}>
+  処理を選択してください
+</div>
 
-                <label style={{ display: 'block', fontSize: '18px', marginBottom: '12px' }}>
-                  <input
-                    type="checkbox"
-                    checked={doPrint}
-                    onChange={(e) => setDoPrint(e.target.checked)}
-                    style={{ width: '22px', height: '22px', marginRight: '10px' }}
-                  />
-                  印刷する
-                </label>
+<div
+  style={{
+    width: '260px',
+    margin: '0 auto 20px',
+    textAlign: 'left',
+  }}
+>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      fontSize: '18px',
+      marginBottom: '12px',
+      justifyContent: 'flex-start',
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={doPrint}
+      onChange={(e) => setDoPrint(e.target.checked)}
+      style={{
+        width: '22px',
+        height: '22px',
+        marginRight: '10px',
+      }}
+    />
+    印刷する
+  </label>
 
-                <label style={{ display: 'block', fontSize: '18px', marginBottom: '20px' }}>
-                  <input
-                    type="checkbox"
-                    checked={doSave}
-                    onChange={(e) => setDoSave(e.target.checked)}
-                    style={{ width: '22px', height: '22px', marginRight: '10px' }}
-                  />
-                  PDFデータを保存する
-                </label>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      fontSize: '18px',
+      justifyContent: 'flex-start',
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={doSave}
+      onChange={(e) => setDoSave(e.target.checked)}
+      style={{
+        width: '22px',
+        height: '22px',
+        marginRight: '10px',
+      }}
+    />
+    PDFデータを保存する
+  </label>
+</div>
 
                 <button
                   className="app-button"
                   onClick={executePrintSave}
-                  style={{ width: '110px', height: '45px', fontSize: '16px', marginRight: '16px' }}
+                  style={{ width: '110px', height: '45px', fontSize: '14px', marginRight: '16px' }}
                 >
                   実行
                 </button>
@@ -646,7 +802,7 @@ const colorAmount = colorTargetLengthTotal * 20;
                 <button
                   className="app-button"
                   onClick={() => setShowPrintPopup(false)}
-                  style={{ width: '110px', height: '45px', fontSize: '16px' }}
+                  style={{ width: '110px', height: '45px', fontSize: '14px' }}
                 >
                   キャンセル
                 </button>
