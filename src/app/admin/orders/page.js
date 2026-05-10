@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   collection,
   deleteDoc,
@@ -10,7 +11,6 @@ import {
   orderBy,
   query,
   startAfter,
-  where,
 } from 'firebase/firestore';
 import { db } from '../../../firebase/config';
 
@@ -26,7 +26,37 @@ function normalizeDate(value) {
   return `${match[1]}/${String(match[2]).padStart(2, '0')}/${String(match[3]).padStart(2, '0')}`;
 }
 
+function matchesFilter(order, filters) {
+  const name = String(order.customerName || '');
+  const keyword = String(filters.customerName || '').trim();
+
+  if (keyword && !name.includes(keyword)) return false;
+
+  const date = normalizeDate(filters.orderDate);
+  if (date && order.orderDateBase !== date) return false;
+
+  if (filters.mode && order.mode !== filters.mode) return false;
+
+  return true;
+}
+
+function getContent(order) {
+  if (order.mode === 'individual') {
+    return (order.textIndividual || [])
+      .map((row, index) =>
+        row?.line1 || row?.line2
+          ? `${index + 1}: ${row.line1 || ''} ${row.line2 || ''}`
+          : ''
+      )
+      .filter(Boolean)
+      .join(' / ');
+  }
+
+  return `${order.textCommon?.line1 || ''} ${order.textCommon?.line2 || ''} ${order.textCommon?.second || ''}`;
+}
+
 export default function AdminOrdersPage() {
+　const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [orderDate, setOrderDate] = useState('');
@@ -37,30 +67,16 @@ export default function AdminOrdersPage() {
   const [lastDocs, setLastDocs] = useState([]);
   const [hasNext, setHasNext] = useState(false);
 
-  const buildConditions = () => {
-    const conditions = [];
-
-    if (customerName.trim()) {
-      conditions.push(where('customerName', '==', customerName.trim()));
-    }
-
-    if (orderDate.trim()) {
-      conditions.push(where('orderDateBase', '==', normalizeDate(orderDate)));
-    }
-
-    if (mode) {
-      conditions.push(where('mode', '==', mode));
-    }
-
-    return conditions;
+  const currentFilters = {
+    customerName,
+    orderDate,
+    mode,
   };
 
   const loadOrders = async ({ reset = false, next = false, prev = false } = {}) => {
     setLoading(true);
 
     try {
-      const conditions = buildConditions();
-
       let cursor = null;
       let targetPage = pageNumber;
 
@@ -74,11 +90,7 @@ export default function AdminOrdersPage() {
         cursor = targetPage > 1 ? lastDocs[targetPage - 2] : null;
       }
 
-      const parts = [
-        collection(db, 'orders'),
-        ...conditions,
-        orderBy('sortKey', 'desc'),
-      ];
+      const parts = [collection(db, 'orders'), orderBy('sortKey', 'desc')];
 
       if (cursor) {
         parts.push(startAfter(cursor));
@@ -92,10 +104,12 @@ export default function AdminOrdersPage() {
       const docs = snap.docs;
       const visibleDocs = docs.slice(0, PAGE_SIZE);
 
-      const list = visibleDocs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
+      const list = visibleDocs
+        .map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }))
+        .filter((order) => matchesFilter(order, currentFilters));
 
       setOrders(list);
       setHasNext(docs.length > PAGE_SIZE);
@@ -159,7 +173,23 @@ export default function AdminOrdersPage() {
         fontFamily: 'sans-serif',
       }}
     >
+
+<button
+  className="app-button"
+  onClick={() => router.push('/')}
+  style={{
+    width: '120px',
+    height: '42px',
+    fontSize: '14px',
+    background: '#ff9900',
+    marginBottom: '18px',
+  }}
+>
+  戻る
+</button>
+
       <h1 style={{ marginTop: 0 }}>注文データ管理</h1>
+
 
       <div
         style={{
@@ -171,17 +201,17 @@ export default function AdminOrdersPage() {
         }}
       >
         <label>
-          <div style={labelStyle}>顧客名 完全一致</div>
+          <div style={labelStyle}>顧客名 部分一致</div>
           <input
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="例：㈱ワークマン"
+            placeholder="例：ワークマン"
             style={inputStyle}
           />
         </label>
 
         <label>
-          <div style={labelStyle}>注文日</div>
+          <div style={labelStyle}>注文日 空欄可</div>
           <input
             value={orderDate}
             onChange={(e) => setOrderDate(e.target.value)}
@@ -191,7 +221,7 @@ export default function AdminOrdersPage() {
         </label>
 
         <label>
-          <div style={labelStyle}>モード</div>
+          <div style={labelStyle}>モード 空欄可</div>
           <select value={mode} onChange={(e) => setMode(e.target.value)} style={inputStyle}>
             <option value="">すべて</option>
             <option value="common">共通</option>
@@ -205,7 +235,7 @@ export default function AdminOrdersPage() {
       </div>
 
       <div style={{ marginBottom: '12px', fontWeight: 'bold' }}>
-        {PAGE_SIZE}件ずつ表示　現在：{pageNumber}ページ目　表示件数：{orders.length}件
+        {PAGE_SIZE}件ずつ取得　現在：{pageNumber}ページ目　表示件数：{orders.length}件
       </div>
 
       <div style={{ marginBottom: '16px' }}>
@@ -256,18 +286,7 @@ export default function AdminOrdersPage() {
           <tbody>
             {orders.map((order) => {
               const modeText = order.mode === 'individual' ? '個別' : '共通';
-
-              const content =
-                order.mode === 'individual'
-                  ? (order.textIndividual || [])
-                      .map((row, index) =>
-                        row?.line1 || row?.line2
-                          ? `${index + 1}: ${row.line1 || ''} ${row.line2 || ''}`
-                          : ''
-                      )
-                      .filter(Boolean)
-                      .join(' / ')
-                  : `${order.textCommon?.line1 || ''} ${order.textCommon?.line2 || ''} ${order.textCommon?.second || ''}`;
+              const content = getContent(order);
 
               return (
                 <tr key={order.id}>
@@ -288,7 +307,7 @@ export default function AdminOrdersPage() {
             {orders.length === 0 && (
               <tr>
                 <td style={tdStyle} colSpan={6}>
-                  該当する注文データがありません。
+                  この100件の中には該当する注文データがありません。必要なら「次の100件」を押してください。
                 </td>
               </tr>
             )}
@@ -359,6 +378,7 @@ const deleteButtonStyle = {
   background: '#ff6666',
   color: '#000',
   border: '1px solid #000',
+  borderRadius: '6px',
   borderRadius: '6px',
   fontWeight: 'bold',
   cursor: 'pointer',

@@ -170,10 +170,15 @@ export default function Home() {
   style={{
     gridRow: '9 / 14',
     gridColumn: '5 / 13',
+    width: '100%',
+    height: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '12px',
+    justifySelf: 'center',
+    alignSelf: 'center',
+    boxSizing: 'border-box',
   }}
 >
 
