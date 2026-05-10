@@ -98,6 +98,17 @@ export default function Home() {
         データ取込
       </button>
 
+<button
+  className="app-button"
+  onClick={() => {
+    router.push('/admin/orders');
+    setShowMenu(false);
+  }}
+  style={{ fontSize: '16px' }}
+>
+  注文データ管理
+</button>
+
       <button
   className="app-button"
   onClick={() => {
