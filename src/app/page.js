@@ -170,17 +170,87 @@ export default function Home() {
   style={{
     gridRow: '9 / 14',
     gridColumn: '5 / 13',
-    width: '100%',
-    height: '100%',
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: '44px 100px 44px',
+    columnGap: '10px',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '12px',
-    justifySelf: 'center',
-    alignSelf: 'center',
+    justifyItems: 'center',
+    width: '100%',
+    height: '100%',
     boxSizing: 'border-box',
   }}
 >
+  <button
+    onClick={() =>
+      setOrderData({
+        ...orderData,
+        quantity: Math.max(1, Number(orderData.quantity || 1) - 1),
+      })
+    }
+    style={{
+      width: '36px',
+      height: '36px',
+      fontSize: '18px',
+      background: '#ddd',
+      border: '1px solid #999',
+      borderRadius: '6px',
+      padding: 0,
+      textAlign: 'center',
+      lineHeight: '34px',
+    }}
+  >
+    −
+  </button>
+
+  <input
+    value={orderData.quantity || ''}
+    onChange={(e) => {
+      const val = e.target.value.replace(/[^0-9]/g, '');
+      setOrderData({
+        ...orderData,
+        quantity: val === '' ? '' : Number(val),
+      });
+    }}
+    inputMode="numeric"
+    pattern="[0-9]*"
+    style={{
+      width: '100px',
+      height: '64px',
+      textAlign: 'center',
+      fontSize: '34px',
+      fontWeight: 'bold',
+      border: '2px solid #000',
+      background: '#fff',
+      color: '#000',
+      boxSizing: 'border-box',
+      padding: 0,
+      margin: 0,
+    }}
+  />
+
+  <button
+    onClick={() =>
+      setOrderData({
+        ...orderData,
+        quantity: Number(orderData.quantity || 1) + 1,
+      })
+    }
+    style={{
+      width: '36px',
+      height: '36px',
+      fontSize: '18px',
+      background: '#ddd',
+      border: '1px solid #999',
+      borderRadius: '6px',
+      padding: 0,
+      textAlign: 'center',
+      lineHeight: '34px',
+    }}
+  >
+    ＋
+  </button>
+</div>
 
   {/* −ボタン（小さめ） */}
   <button
