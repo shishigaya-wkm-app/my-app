@@ -359,6 +359,26 @@ const executePrintSave = async () => {
           <StepCell row="1 / 3" col="33 / 37" bg="#0044cc">注文書</StepCell>
           <StepCell row="1 / 3" col="37 / 41" bg="#000">GOAL</StepCell>
 
+<button
+  className="app-button"
+onClick={() => {
+  router.push('/?askClear=1');
+}}
+  style={{
+    gridRow: '3 / 5',
+    gridColumn: '30 / 33',
+    width: '90%',
+    height: '90%',
+    alignSelf: 'center',
+    justifySelf: 'center',
+    fontSize: '9px',
+    zIndex: 5,
+    background: '#99cc00',
+  }}
+>
+  スタート画面
+</button>
+
           <button
             className="app-button"
             onClick={async () => {

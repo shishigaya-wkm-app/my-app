@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '../context/OrderContext';
 
@@ -8,6 +8,16 @@ export default function Home() {
   const router = useRouter();
   const { orderData, setOrderData, resetOrder } = useOrder();
   const [showMenu, setShowMenu] = useState(false);
+  const [showClearPopup, setShowClearPopup] = useState(false);
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('askClear') === '1') {
+    setShowClearPopup(true);
+    window.history.replaceState(null, '', '/');
+  }
+}, []);
 
   const setQuantity = (value) => {
     const numberOnly = value.replace(/[^0-9]/g, '');
@@ -98,6 +108,8 @@ export default function Home() {
         データ取込
       </button>
 
+
+
 <button
   className="app-button"
   onClick={() => {
@@ -126,6 +138,66 @@ export default function Home() {
         style={{ fontSize: '16px' }}
       >
         閉じる
+      </button>
+    </div>
+  </div>
+)}
+
+{showClearPopup && (
+  <div
+    style={{
+      position: 'absolute',
+      inset: 0,
+      background: 'rgba(0,0,0,0.45)',
+      zIndex: 60,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}
+  >
+    <div
+      style={{
+        width: '360px',
+        background: '#fff',
+        border: '3px solid #000',
+        borderRadius: '14px',
+        padding: '22px',
+        textAlign: 'center',
+        fontWeight: 'bold',
+      }}
+    >
+      <div style={{ fontSize: '20px', marginBottom: '22px' }}>
+        入力内容をクリアしますか？
+      </div>
+
+      <button
+        className="app-button"
+        onClick={() => {
+          resetOrder();
+          setShowClearPopup(false);
+        }}
+        style={{
+          width: '110px',
+          height: '45px',
+          fontSize: '16px',
+          marginRight: '18px',
+          background: '#ff9900',
+        }}
+      >
+        はい
+      </button>
+
+      <button
+        className="app-button"
+        onClick={() => setShowClearPopup(false)}
+        style={{
+          width: '110px',
+          height: '45px',
+          fontSize: '16px',
+          background: '#dddddd',
+        }}
+      >
+        いいえ
       </button>
     </div>
   </div>
