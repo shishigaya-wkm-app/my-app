@@ -376,7 +376,8 @@ onClick={() => {
     background: '#99cc00',
   }}
 >
-  スタート画面
+  スタート<br />
+  画面
 </button>
 
           <button
